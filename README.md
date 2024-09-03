@@ -6,13 +6,13 @@ To extract all messages in bulk from a PROD/QA env to analyse any messages.
 
 ## Usage:
 
-#### WITH SSL:
+#### with SSL:
 ```bash
 ./kafctl -b <broker> -t <topic> -g <consumer-group> -o <consumer_out.json> -s -f <ssl-config.json>
 ./kafctl -b kafka-service.com:9093 -t topic_internal -g xconsumer-id-5 -o consumer_out.json -s -f config.json 
 ```
 
-#### WITHOUT SSL:
+#### without SSL:
 ```bash
 ./kafctl -b <broker> -t <topic> -g <consumer-group> -o <consumer_out.json>
 ./kafctl -b localhost:9092 -t purchases -g xconsumer-id-5 -o consumer_out.json
