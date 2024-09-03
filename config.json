@@ -1,0 +1,7 @@
+{
+    "securityProtocol": "SSL",
+    "sslCaLocation": "./ssl/cacerts.pem",
+    "sslCertLocation": "./ssl/public_key.pem",
+    "sslKeyLocation": "./ssl/private_key.pem",
+    "sslKeyPassword": "mykeypassword"
+  }
