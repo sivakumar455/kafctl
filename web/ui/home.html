@@ -1,0 +1,71 @@
+{{define "title"}}home{{end}}
+
+{{ define "kaf-header" }}
+<header class="my-4 text-center">
+    <h1><a href='/'>kafView</a></h1>
+</header>
+{{end}}
+
+{{ define "kaf-footer"}}
+<footer class="my-4 text-center">Powered by <a href='https://golang.org/'>Go</a></footer>
+{{end}}
+
+{{define "topics"}}
+<h2>Topics</h2>
+<table class="table table-striped">
+    <tr>
+        <th class="topic-header mb-3" >
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Topic</span>
+                </div>
+                <input type="text" class="form-control" id="search-input" placeholder="Search Topics"
+                onkeyup="filterTopics()">
+                <div class="input-group-append">
+                  <span class="input-group-text">{{len .Topics.TopicsMap}}</span>
+                </div>
+              </div>
+        </th>
+        <th>Partitions</th>
+        <th>Replicas</th>
+        <th>Isrs</th>
+    </tr>
+    {{range $topicName, $topicMetadata := .Topics.TopicsMap}}
+    <tr>
+        <td> 
+        <a href="#" hx-get="/topic-details?name={{$topicName}}" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
+            {{$topicName}}
+        </a>
+        </td>
+        <td>{{len $topicMetadata.Partitions}}</td>
+        <td>{{countReplicas $topicMetadata.Partitions}}</td>
+        <td>{{countIsrs $topicMetadata.Partitions}}</td>
+    </tr>
+    {{end}}
+</table>
+{{end}}
+
+{{define "brokers"}}
+<h2>Brokers</h2>
+<table class="table table-striped">
+    <tr>
+        <th>Broker ID</th>
+        <th>Host</th>
+        <th>Port</th>
+    </tr>
+    {{range .Brokers}}
+    <tr>
+        <td>{{.Id}}</td>
+        <td>{{.Host}}</td>
+        <td>{{.Port}}</td>
+    </tr>
+    {{end}}
+</table>
+{{end}}
+
+{{define "clusterInfo"}}
+<div>
+    {{template "brokers" .}}
+    <h5>Status: {{.Status}}</h5>
+</div>
+{{end}}
