@@ -22,10 +22,9 @@ type SSLConfig struct {
 	SslKeyPassword   string `json:"sslKeyPassword"`
 }
 
-func SetSSLConfig(consumerCfg *kafka.ConfigMap, configFile string) error {
-
+func SetSSLConfig(consumerCfg *kafka.ConfigMap, sslConfigFile string) error {
 	// Read SSL configuration from file
-	sslCfgFile, err := os.Open(configFile)
+	sslCfgFile, err := os.Open(sslConfigFile)
 	if err != nil {
 		return err
 	}
@@ -47,64 +46,52 @@ func SetSSLConfig(consumerCfg *kafka.ConfigMap, configFile string) error {
 }
 
 func CreateConsumerConfig() (*kafka.ConfigMap, error) {
-
-	// Create a new Kafka consumer with SSL configuration
 	consumerCfg := &kafka.ConfigMap{
 		"bootstrap.servers": config.KafkaBroker,
 		"group.id":          config.GroupId,
 		"auto.offset.reset": "earliest",
 	}
 
-	// Read SSL configuration from file
 	if config.EnableSSL {
 		err := SetSSLConfig(consumerCfg, config.ConfigFile)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	return consumerCfg, nil
 }
 
 func CreateProducerConfig() (*kafka.ConfigMap, error) {
-
-	// Create a new Kafka consumer with SSL configuration
 	producerCfg := &kafka.ConfigMap{
 		"bootstrap.servers": config.KafkaBroker,
 		"acks":              "all",
 	}
 
-	// Read SSL configuration from file
 	if config.EnableSSL {
 		err := SetSSLConfig(producerCfg, config.ConfigFile)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	return producerCfg, nil
 }
 
 func CreateAdminConfig() (*kafka.ConfigMap, error) {
-
-	// Create a new Kafka consumer with SSL configuration
 	adminCfg := &kafka.ConfigMap{"bootstrap.servers": config.KafkaBroker}
 
-	// Read SSL configuration from file
 	if config.EnableSSL {
 		err := SetSSLConfig(adminCfg, config.ConfigFile)
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	return adminCfg, nil
 }
 
 func CreateAdminClient() (*kafka.AdminClient, error) {
-
 	cfg, err := CreateAdminConfig()
 	if err != nil {
+		logger.Error("Failed to create admin Config", "error", err)
 		return nil, err
 	}
 
@@ -113,12 +100,10 @@ func CreateAdminClient() (*kafka.AdminClient, error) {
 		logger.Error("Failed to create admin Client", "error", err)
 		return nil, err
 	}
-
 	return admin, nil
 }
 
 func GetClusterDetails() ([]models.Broker, error) {
-
 	adminClient, err := CreateAdminClient()
 	if err != nil {
 		return nil, err
@@ -126,16 +111,15 @@ func GetClusterDetails() ([]models.Broker, error) {
 	defer adminClient.Close()
 
 	// Fetch metadata
+	logger.Info("Fetching Brokers Details")
 	metadata, err := adminClient.GetMetadata(nil, true, 10000)
 	if err != nil {
 		return nil, err
 	}
 
-	// Print broker information
-	logger.Info("Brokers Details")
 	brokers := []models.Broker{}
 	for _, broker := range metadata.Brokers {
-		logger.Info(fmt.Sprintf("ID: %d, Host: %s, Port: %d\n", broker.ID, broker.Host, broker.Port))
+		logger.Debug(fmt.Sprintf("ID: %d, Host: %s, Port: %d\n", broker.ID, broker.Host, broker.Port))
 		brokers = append(brokers, models.Broker{Id: broker.ID, Host: broker.Host, Port: broker.Port})
 	}
 
