@@ -40,7 +40,7 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func GetTopicsRt(w http.ResponseWriter, r *http.Request) {
+func GetTopicsHandler(w http.ResponseWriter, r *http.Request) {
 
 	brokerInfo := models.BrokerList{}
 	brokerInfo.Status = "Kafka is Up and Running"
@@ -125,8 +125,8 @@ func HanldlerInit() {
 
 	mux.HandleFunc("/", home)
 	mux.HandleFunc("/data", dataHandler)
-	mux.HandleFunc("/topics", GetTopicsRt)
 
+	mux.HandleFunc("/topics", GetTopicsHandler)
 	mux.HandleFunc("/createtopicform", createTopicFormHandler)
 	mux.HandleFunc("/createtopic", createTopicHandler)
 
