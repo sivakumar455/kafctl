@@ -12,19 +12,24 @@
 </head>
 
 <body>
+    {{ template "home-header"}}
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-
                 {{ template "kaf-header"}}
-
+                <h2>Brokers</h2>
+                <hr>
                 <div id="cluster-info">
                     {{template "clusterInfo" .}}
                 </div>
 
-                <button hx-get="/createtopicform" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
-                    New Topic
-                </button>
+                <h2>Topics</h2>
+                <div>
+                    <button type="button" class="btn btn-info btn-sm" hx-get="/createtopicform" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
+                        New Topic
+                    </button>
+                </div>
+                <hr>
                 <div hx-get="/topics" hx-trigger="every 300s" hx-target="#topics-list" hx-swap="innerHTML">
                 </div>
 

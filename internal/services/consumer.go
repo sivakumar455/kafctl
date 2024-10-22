@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"kafctl/internal/config"
+	"log"
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -19,8 +20,34 @@ func NewConsumer() (*kafka.Consumer, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Consuming from topic: %s\n", config.Topic)
 	return c, nil
+}
+
+func GetOffsets(topic string, partition int) error {
+
+	// Create a new Kafka consumer
+	consumer, err := NewConsumer()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := consumer.Close(); err != nil {
+			log.Fatalf("Failed to close consumer: %s", err)
+		}
+	}()
+
+	// Query the watermark offsets
+	low, high, err := consumer.QueryWatermarkOffsets(topic, int32(partition), 1000)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("First offset: %d\n", low)
+	fmt.Printf("Last offset: %d\n", high)
+	fmt.Println("Done")
+
+	fmt.Println("Shutting down consumer...")
+	return nil
 }
 
 func ConsumeMessages(kafkaBroker, groupId, configFile, topic string, enableSSL bool) error {

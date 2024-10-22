@@ -1,24 +1,16 @@
 /* styles.css */
-table,
-th,
-td {
-    border: 1px solid black;
-    border-collapse: collapse;
-    padding: 8px;
+
+header.my-4.text-center {
+    margin: 2rem 0;
+    text-align: center;
 }
 
-table {
-    width: 100%;
-    margin-bottom: 20px;
+header.my-4.text-center h1 {
+    font-size: 2.5rem;
+    color: #333;
 }
 
-th {
-    background-color: #f2f2f2;
+header.my-4.text-center h1 a {
+    text-decoration: none;
+    color: inherit;
 }
-
-th,
-td {
-    text-align: left;
-}
-
-

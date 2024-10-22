@@ -1,62 +1,65 @@
 {{ define "describeTopic"}}
 
 <body>
+    {{ template "home-header"}}
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
 
                 {{ template "kaf-header"}}
 
-                <h1>Topic Details</h1>
+                <h2>Topic: {{.Name}}</h2>
 
                 <div id="item-1">
-                    <p>Item 1</p>
-                    <button 
-                        hx-delete="/delete-topic/{{.Name}}" 
-                        hx-target="#item-1"
-                        hx-swap="inerHTML"
-                        hx-confirm="Are you sure you want to delete this topic?">
-                        Delete
-                    </button>
-
-                <table border="1">
-                    <tr>
-                        <th>Topic Name</th>
-                        <th>Topic ID</th>
-                        <th>Allowed Operations</th>
-                    </tr>
-                    <tr>
-                        <td rowspan="{{len .Partitions}}">{{.Name}}</td>
-                        <td rowspan="{{len .Partitions}}">{{.TopicID}}</td>
-                        <td rowspan="{{len .Partitions}}">{{.AuthorizedOperations}}</td>
-                    </tr>
-                </table>
-
-
-                <table border="1">
-                    <thead>
+                    <div>
+                        <button type="button" class="btn btn-info">View Messages</button>
+                        <button type="button" class="btn btn-danger" hx-delete="/delete-topic/{{.Name}}" hx-target="#item-1" hx-swap="inerHTML"
+                            hx-confirm="Are you sure you want to delete this topic?">
+                            Delete Topic
+                        </button>
+                        <hr>
+                    </div>
+                    
+                    <table class="table table-striped table-bordered">
                         <tr>
-                            <th>Partition ID</th>
-                            <th>Leader</th>
-                            <th>In-Sync Replicas</th>
-                            <th>Replicas</th>
+                            <th>Topic Name</th>
+                            <th>Topic ID</th>
+                            <th>Allowed Operations</th>
+                            <th>IsInternal</th>
                         </tr>
-                    </thead>
-                    <tbody>
                         <tr>
-                            {{range $index, $partition := .Partitions}}
-                            {{if $index}}
-                        <tr>
+                            <td rowspan="{{len .Partitions}}">{{.Name}}</td>
+                            <td rowspan="{{len .Partitions}}">{{.TopicID}}</td>
+                            <td rowspan="{{len .Partitions}}">{{.AuthorizedOperations}}</td>
+                            <td rowspan="{{len .Partitions}}">{{.IsInternal}}</td>
+                        </tr>
+                    </table>
+
+                    <h3>Partition Detail</h3>
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Partition ID</th>
+                                <th>Leader</th>
+                                <th>In-Sync Replicas</th>
+                                <th>Replicas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                {{range $index, $partition := .Partitions}}
+                                {{if $index}}
+                            <tr>
+                                {{end}}
+                                <td>{{$partition.Partition}}</td>
+                                <td>{{$partition.Leader}}</td>
+                                <td>{{range $partition.Isr}}{{$index}}, {{end}}</td>
+                                <td>{{range $partition.Replicas}}{{$index}}, {{end}}</td>
+                            </tr>
                             {{end}}
-                            <td>{{$partition.PartitionID}}</td>
-                            <td>{{$partition.Leader}}</td>
-                            <td>{{range $partition.Isr}}{{$index}}, {{end}}</td>
-                            <td>{{range $partition.Replicas}}{{$index}}, {{end}}</td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
-            </div>
+                        </tbody>
+                    </table>
+                </div>
 
                 {{ template "kaf-footer"}}
             </div>

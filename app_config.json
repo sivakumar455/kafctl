@@ -1,0 +1,10 @@
+{
+    "kafkaBroker": "localhost:9092",
+    "topic": "kaf-topic-test",
+    "groupId": "kaf-consumer-group-test",
+    "sslConfigFile": "ssl_config.json",
+    "outputFile": "kaf_output.txt",
+    "enableSSL": false,
+    "kafView": true,
+    "kafViewUrl": ":8989"
+  }

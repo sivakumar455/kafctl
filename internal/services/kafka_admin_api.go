@@ -1,0 +1,232 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"kafctl/internal/logger"
+	"time"
+
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/pkg/errors"
+)
+
+type Admin interface {
+	GetClusterDetails() ([]kafka.BrokerMetadata, error)
+	GetAllTopics() (map[string]kafka.TopicMetadata, error)
+	CreateTopic(topic string, numParts, replicationFactor int) error
+	DeleteTopic(topic string) error
+	DescribeTopic(topic string) (kafka.DescribeTopicsResult, error)
+	ListOffsets(topicName string, partition int) error
+}
+
+type KafAdmin struct{}
+
+func (ka *KafAdmin) GetClusterDetails() ([]kafka.BrokerMetadata, error) {
+	adminClient, err := CreateAdminClient()
+	if err != nil {
+		return nil, err
+	}
+	defer adminClient.Close()
+
+	logger.Debug("Fetching Brokers Details")
+	metadata, err := adminClient.GetMetadata(nil, true, 10000)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, broker := range metadata.Brokers {
+		logger.Debug(fmt.Sprintf("ID: %d, Host: %s, Port: %d\n", broker.ID, broker.Host, broker.Port))
+	}
+
+	return metadata.Brokers, nil
+}
+
+func (ka *KafAdmin) GetAllTopics() (map[string]kafka.TopicMetadata, error) {
+
+	logger.Info("Fetching all topics")
+
+	admin, err := CreateAdminClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to craete Admin client")
+	}
+	defer admin.Close()
+	logger.Debug("Admin client created successfully")
+
+	metadata, err := admin.GetMetadata(nil, true, 3000)
+	if err != nil {
+		return nil, err
+	}
+
+	for topicName, topic := range metadata.Topics {
+		logger.Debug(fmt.Sprintf("Topic: %s, Partitions: %d\n", topicName, len(topic.Partitions)))
+		for partitionID, partition := range topic.Partitions {
+			logger.Debug(fmt.Sprintf("  Partition: %d, Leader: %d, Replicas: %v, ISR: %v\n",
+				partitionID, partition.Leader, partition.Replicas, partition.Isrs))
+		}
+	}
+	logger.Info("Total number of topics: ", "total", len(metadata.Topics))
+
+	return metadata.Topics, nil
+
+}
+
+func (ka *KafAdmin) CreateTopic(topic string, numParts, replicationFactor int) error {
+
+	admin, err := CreateAdminClient()
+	if err != nil {
+		return err
+	}
+	defer admin.Close()
+	logger.Debug("Admin client created successfully")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	maxDur, err := time.ParseDuration("5s")
+	if err != nil {
+		return err
+	}
+	results, err := admin.CreateTopics(
+		ctx,
+		// Multiple topics can be created simultaneously
+		// by providing more TopicSpecification structs here.
+		[]kafka.TopicSpecification{{
+			Topic:             topic,
+			NumPartitions:     numParts,
+			ReplicationFactor: replicationFactor}},
+		// Admin options
+		kafka.SetAdminOperationTimeout(maxDur))
+	if err != nil {
+		logger.Error("Failed to create topic: ", "error", err)
+		return err
+	}
+
+	// Print results
+	for _, result := range results {
+		logger.Info("result: ", "result", result)
+	}
+	return nil
+}
+
+func (ka *KafAdmin) DeleteTopic(topic string) error {
+
+	admin, err := CreateAdminClient()
+	if err != nil {
+		return err
+	}
+	defer admin.Close()
+	logger.Debug("Admin client created successfully")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	maxDur, err := time.ParseDuration("5s")
+	if err != nil {
+		return err
+	}
+
+	topics := []string{topic}
+	results, err := admin.DeleteTopics(ctx, topics, kafka.SetAdminOperationTimeout(maxDur))
+	if err != nil {
+		logger.Error("Failed to delete topics: ", "error", err)
+		return err
+	}
+
+	res := results[0]
+	logger.Info("Topic deleted successfully", "result", res)
+
+	return nil
+}
+
+func (ka *KafAdmin) DescribeTopic(topic string) (kafka.DescribeTopicsResult, error) {
+
+	logger.Info("getting details for topic - ", "topic", topic)
+	admin, err := CreateAdminClient()
+	if err != nil {
+		return kafka.DescribeTopicsResult{}, err
+	}
+	defer admin.Close()
+	logger.Debug("kafka admin client created")
+
+	// Call DescribeTopics.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	includeAuthorizedOperations := true
+
+	describeTopicsResult, err := admin.DescribeTopics(
+		ctx,
+		kafka.NewTopicCollectionOfTopicNames([]string{topic}),
+		kafka.SetAdminOptionIncludeAuthorizedOperations(
+			includeAuthorizedOperations))
+	if err != nil {
+		logger.Error("Failed to describe topics:", "error", err)
+		return kafka.DescribeTopicsResult{}, err
+	}
+
+	// Print results
+	logger.Debug(fmt.Sprintf("A total of %d topic(s) described:\n\n", len(describeTopicsResult.TopicDescriptions)))
+	logger.Debug("Described for topic", "topic", describeTopicsResult.TopicDescriptions[0].Name)
+	printTopicsDescriptionResult(describeTopicsResult, includeAuthorizedOperations)
+	return describeTopicsResult, nil
+}
+
+func printTopicsDescriptionResult(describeTopicsResult kafka.DescribeTopicsResult, includeAuthorizedOperations bool) {
+	for _, t := range describeTopicsResult.TopicDescriptions {
+		if t.Error.Code() != 0 {
+			logger.Error(fmt.Sprintf("Topic: %s has error: %s\n",
+				t.Name, t.Error))
+			continue
+		}
+		logger.Info("Topic has succeeded", "topic", t.Name, "Topic Id", t.TopicID)
+		if includeAuthorizedOperations {
+			logger.Debug("Allowed operations ", "operations", t.AuthorizedOperations)
+		}
+		for i := 0; i < len(t.Partitions); i++ {
+			logger.Debug(fmt.Sprintf("Partition id: %d with leader: %s",
+				t.Partitions[i].Partition, t.Partitions[i].Leader))
+			logger.Debug(fmt.Sprintf("The in-sync replica count is: %d, they are: %s",
+				len(t.Partitions[i].Isr), t.Partitions[i].Isr))
+			logger.Debug(fmt.Sprintf("The replica count is: %d, they are: %s",
+				len(t.Partitions[i].Replicas), t.Partitions[i].Replicas))
+		}
+	}
+}
+
+func (ka *KafAdmin) ListOffsets(topicName string, partition int) error {
+
+	admin, err := CreateAdminClient()
+	if err != nil {
+		return err
+	}
+	defer admin.Close()
+	logger.Debug("Admin client created successfully")
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+
+	topicPartitionOffsets := make(map[kafka.TopicPartition]kafka.OffsetSpec)
+
+	tp := kafka.TopicPartition{Topic: &topicName, Partition: int32(partition)}
+
+	topicPartitionOffsets[tp] = kafka.EarliestOffsetSpec
+
+	results, err := admin.ListOffsets(ctx, topicPartitionOffsets,
+		kafka.SetAdminIsolationLevel(kafka.IsolationLevelReadCommitted))
+	if err != nil {
+		fmt.Printf("Failed to List offsets: %v\n", err)
+		return err
+	}
+
+	for tp, info := range results.ResultInfos {
+		fmt.Printf("Topic: %s Partition: %d\n", *tp.Topic, tp.Partition)
+		if info.Error.Code() != kafka.ErrNoError {
+			fmt.Printf("	ErrorCode: %d ErrorMessage: %s\n\n", info.Error.Code(), info.Error.String())
+		} else {
+			fmt.Printf("	Offset: %d Timestamp: %d\n\n", info.Offset, info.Timestamp)
+		}
+	}
+
+	return nil
+
+}

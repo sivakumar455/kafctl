@@ -5,8 +5,9 @@ import (
 	"kafctl/internal/config"
 	"os"
 
+	"math/rand"
+
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"golang.org/x/exp/rand"
 )
 
 func NewProducer() *kafka.Producer {

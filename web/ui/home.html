@@ -1,5 +1,11 @@
 {{define "title"}}home{{end}}
 
+{{define "home-header"}}
+<nav class="navbar sticky-top navbar-dark bg-dark">
+    <a class="navbar-brand text-center" href="/">home</a>
+</nav>
+{{end}}
+
 {{ define "kaf-header" }}
 <header class="my-4 text-center">
     <h1><a href='/'>kafView</a></h1>
@@ -11,8 +17,7 @@
 {{end}}
 
 {{define "topics"}}
-<h2>Topics</h2>
-<table class="table table-striped">
+<table class="table table-striped table-bordered">
     <tr>
         <th class="topic-header mb-3" >
             <div class="input-group mb-3">
@@ -22,7 +27,7 @@
                 <input type="text" class="form-control" id="search-input" placeholder="Search Topics"
                 onkeyup="filterTopics()">
                 <div class="input-group-append">
-                  <span class="input-group-text">{{len .Topics.TopicsMap}}</span>
+                  <span class="input-group-text">{{len .Topics}}</span>
                 </div>
               </div>
         </th>
@@ -30,7 +35,7 @@
         <th>Replicas</th>
         <th>Isrs</th>
     </tr>
-    {{range $topicName, $topicMetadata := .Topics.TopicsMap}}
+    {{range $topicName, $topicMetadata := .Topics}}
     <tr>
         <td> 
         <a href="#" hx-get="/topic-details?name={{$topicName}}" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
@@ -46,8 +51,7 @@
 {{end}}
 
 {{define "brokers"}}
-<h2>Brokers</h2>
-<table class="table table-striped">
+<table  class="table table-striped table-bordered">
     <tr>
         <th>Broker ID</th>
         <th>Host</th>
@@ -55,7 +59,7 @@
     </tr>
     {{range .Brokers}}
     <tr>
-        <td>{{.Id}}</td>
+        <td>{{.ID}}</td>
         <td>{{.Host}}</td>
         <td>{{.Port}}</td>
     </tr>
@@ -66,6 +70,8 @@
 {{define "clusterInfo"}}
 <div>
     {{template "brokers" .}}
-    <h5>Status: {{.Status}}</h5>
+    {{ if eq .Status "DOWN" }}
+    <h5 style="color: red;">Status: Kafka server is down</h5>
+    {{end}}
 </div>
 {{end}}

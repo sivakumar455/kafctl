@@ -9,36 +9,31 @@ import (
 	"kafctl/internal/config"
 	"kafctl/internal/handlers"
 	"kafctl/internal/logger"
+	"net/http"
 	"os"
-)
-
-var (
-	topic, kafkaBroker, outputFile, groupId, configFile string
-	enableSSL                                           bool
-	view                                                bool
 )
 
 func main() {
 	// Define flags
-	//var topic, kafkaBroker, outputFile, groupId, configFile string
-	//var enableSSL bool
+	var topic, kafkaBroker, outputFile, groupId, configFile string
+	var enableSSL, view bool
 	flag.StringVar(&topic, "topic", "", "Kafka topic to consume from (mandatory)")
 	flag.StringVar(&topic, "t", "", "Kafka topic to consume from (mandatory, shorthand)")
 
 	flag.StringVar(&kafkaBroker, "kafkaBroker", "", "Kafka broker address (mandatory)")
 	flag.StringVar(&kafkaBroker, "b", "", "Kafka broker address (mandatory, shorthand)")
 
-	flag.StringVar(&outputFile, "outputFile", "consumer_out.txt", "File to write output to")
-	flag.StringVar(&outputFile, "o", "consumer_out.txt", "File to write output to (shorthand)")
+	flag.StringVar(&outputFile, "outputFile", "", "File to write output to")
+	flag.StringVar(&outputFile, "o", "", "File to write output to (shorthand)")
 
-	flag.StringVar(&groupId, "groupId", "x-consumer-test", "Kafka consumer group ID")
-	flag.StringVar(&groupId, "g", "x-consumer-test", "Kafka consumer group ID (shorthand)")
+	flag.StringVar(&groupId, "groupId", "", "Kafka consumer group ID")
+	flag.StringVar(&groupId, "g", "", "Kafka consumer group ID (shorthand)")
 
 	flag.BoolVar(&enableSSL, "enableSSL", false, "Enable SSL configuration")
 	flag.BoolVar(&enableSSL, "s", false, "Enable SSL configuration (shorthand)")
 
-	flag.StringVar(&configFile, "config", "ssl_properties.json", "Path to SSL configuration file")
-	flag.StringVar(&configFile, "f", "ssl_properties.json", "Path to SSL configuration file (shorthand)")
+	flag.StringVar(&configFile, "config", "", "Path to SSL configuration file")
+	flag.StringVar(&configFile, "f", "", "Path to SSL configuration file (shorthand)")
 
 	flag.BoolVar(&view, "view", false, "dash oard for kafctl")
 	flag.BoolVar(&view, "v", false, "dash oard for kafctl")
@@ -51,18 +46,28 @@ func main() {
 	// Parse flagss
 	flag.Parse()
 
-	if kafkaBroker == "" {
-		logger.Error("Error: topic and kafkaBroker flags are mandatory")
-		flag.Usage()
+	// initializing with configs
+	err := config.InitConfig(kafkaBroker, groupId, configFile, topic, outputFile, enableSSL, view)
+	if err != nil {
+		logger.Error("Error initializing kafka config", "error", err)
 		os.Exit(1)
 	}
 
-	config.InitConfig(kafkaBroker, groupId, configFile, topic, outputFile, enableSSL)
-	//err := services.ConsumeMessagesInFile(kafkaBroker, groupId, configFile, topic, outputFile, enableSSL)
+	// running kafView if enabled
+	if config.KafView {
 
-	if view {
-		logger.Info("Running kafctl dashboard on localhost:8989")
-		handlers.HanldlerInit()
+		app := handlers.Application{}
+		mux, err := app.Routes()
+		if err != nil {
+			logger.Error("Error creating routes", "error", err)
+			os.Exit(1)
+		}
+
+		logger.Info("Running kafView dashboard on: ", "url", "http://"+config.KafViewUrl)
+		err = http.ListenAndServe(config.KafViewUrl, mux)
+		if err != nil {
+			logger.Error("Error opening kafView", "error", err)
+			os.Exit(1)
+		}
 	}
-
 }
