@@ -1,10 +1,20 @@
-To extract kafka messages into a file from kafka server.
+## kafView:
+kafView - A UI for kafka server.
 
-## UseCase: 
+home
+![alt text](images/kafview_home.png)
+
+topic details
+![alt text](images/topic_details.png)
+
+## kafCtl:
+A CMD line tool for kafka server to view and manipulate kafka server operation through command line.
+
+#### UseCase: 
 To extract all messages in bulk from a PROD/QA env to analyse any messages.
         Especially for DLQ messages this could be more helpful.
 
-## Usage:
+#### Usage:
 
 #### with SSL:
 ```bash
