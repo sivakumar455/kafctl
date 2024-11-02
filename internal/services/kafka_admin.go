@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/pkg/errors"
 )
 
 type SSLConfig struct {
@@ -17,6 +16,8 @@ type SSLConfig struct {
 	SslKeyLocation   string `json:"sslKeyLocation"`
 	SslKeyPassword   string `json:"sslKeyPassword"`
 }
+
+var NewAdminClient = kafka.NewAdminClient
 
 func SetSSLConfig(cfgMap *kafka.ConfigMap, sslConfigFile string) error {
 	// Read SSL configuration from file
@@ -72,7 +73,7 @@ func CreateProducerConfig() (*kafka.ConfigMap, error) {
 	return producerCfg, nil
 }
 
-func CreateAdminConfig() (*kafka.ConfigMap, error) {
+func NewAdminConfig() (*kafka.ConfigMap, error) {
 	adminCfg := &kafka.ConfigMap{"bootstrap.servers": config.KafkaBroker}
 
 	if config.EnableSSL {
@@ -84,17 +85,17 @@ func CreateAdminConfig() (*kafka.ConfigMap, error) {
 	return adminCfg, nil
 }
 
-func CreateAdminClient() (*kafka.AdminClient, error) {
-	cfg, err := CreateAdminConfig()
+func CreateAdminClient() (IRdAdminClient, error) {
+	cfg, err := NewAdminConfig()
 	if err != nil {
 		logger.Error("Failed to create admin Config", "error", err)
-		return nil, errors.Wrap(err, "failed to create Admin client")
+		return nil, err
 	}
 
-	admin, err := kafka.NewAdminClient(cfg)
+	admin, err := NewAdminClient(cfg)
 	if err != nil {
 		logger.Error("Failed to create admin Client", "error", err)
-		return nil, errors.Wrap(err, "failed to create Admin client")
+		return nil, err
 	}
 	return admin, nil
 }

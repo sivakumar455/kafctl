@@ -9,6 +9,7 @@ import (
 	"kafctl/internal/config"
 	"kafctl/internal/handlers"
 	"kafctl/internal/logger"
+	"kafctl/internal/services"
 	"net/http"
 	"os"
 )
@@ -57,7 +58,14 @@ func main() {
 	if config.KafView {
 
 		app := handlers.Application{}
-		mux, err := app.Routes()
+		admin, err := services.NewKafAdmin()
+		if err != nil {
+			logger.Error("Error initializing kafka admin", "error", err)
+			os.Exit(1)
+		}
+		defer admin.Close()
+
+		mux, err := app.Routes(admin)
 		if err != nil {
 			logger.Error("Error creating routes", "error", err)
 			os.Exit(1)

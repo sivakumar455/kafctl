@@ -1,27 +1,30 @@
 package handlers
 
 import (
+	"kafctl/internal/services"
 	"net/http"
 )
 
 type Application struct{}
 
-func (app *Application) Routes() (http.Handler, error) {
+func (app *Application) Routes(admin services.IKafAdmin) (http.Handler, error) {
 
 	mux := http.NewServeMux()
+
+	handlers := NewKafkaHandlers(admin)
 
 	fileServer := http.FileServer(http.Dir("./web/ui/static/"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/data", dataHandler)
+	mux.HandleFunc("/", handlers.home)
+	mux.HandleFunc("/data", handlers.dataHandler)
 
-	mux.HandleFunc("/topics", GetTopicsHandler)
-	mux.HandleFunc("/createtopicform", createTopicFormHandler)
-	mux.HandleFunc("/createtopic", createTopicHandler)
+	mux.HandleFunc("/topics", handlers.GetTopicsHandler)
+	mux.HandleFunc("/createtopicform", handlers.createTopicFormHandler)
+	mux.HandleFunc("/createtopic", handlers.createTopicHandler)
 
-	mux.HandleFunc("/topic-details", describeTopicHandler)
-	mux.HandleFunc("/delete-topic/", deleteTopicHandler)
+	mux.HandleFunc("/topic-details", handlers.describeTopicHandler)
+	mux.HandleFunc("/delete-topic/", handlers.deleteTopicHandler)
 
 	// Register pprof handlers
 	// mux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))

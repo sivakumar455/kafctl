@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestGetOffsets(t *testing.T) {
+func TestsGetOffsets(t *testing.T) {
 
 	config.KafkaBroker = "localhost:9092"
 	topic := "Aatest11"

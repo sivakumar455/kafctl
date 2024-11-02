@@ -16,16 +16,24 @@ const HOME_TEMPL_PATH string = "./web/ui/home.html"
 const TOPIC_FORM_TEMPL_PATH string = "./web/ui/topicform.html"
 const TOPIC_DETAILS_TEMPL_PATH string = "./web/ui/topicdetails.html"
 
+type KafAdminHandlers struct {
+	kafAdmin services.IKafAdmin
+}
+
+func NewKafkaHandlers(kafkaAdminService services.IKafAdmin) *KafAdminHandlers {
+	return &KafAdminHandlers{kafAdmin: kafkaAdminService}
+}
+
 type Data struct {
 	Content string `json:"content"`
 }
 
-func dataHandler(w http.ResponseWriter, r *http.Request) {
+func (kah *KafAdminHandlers) dataHandler(w http.ResponseWriter, r *http.Request) {
 	data := Data{Content: "Page Last updated at " + time.Now().Format(time.RFC3339)}
 	json.NewEncoder(w).Encode(data)
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (kah *KafAdminHandlers) home(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -34,15 +42,14 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 	brokerInfo := models.BrokerInfo{}
 	brokerInfo.Status = "UP"
-	kafAdmin := services.KafAdmin{}
-	brokers, err := kafAdmin.GetClusterDetails()
+	brokers, err := kah.kafAdmin.GetClusterDetails()
 	if err != nil {
 		logger.Error("Error getting cluster details: ", "error", err)
 		brokerInfo.Status = "DOWN"
 	} else {
 		brokerInfo.Brokers = brokers
 	}
-	topics, err := kafAdmin.GetAllTopics()
+	topics, err := kah.kafAdmin.GetAllTopics()
 	if err != nil {
 		logger.Error("Err getting topics: ", "error", err)
 	} else {

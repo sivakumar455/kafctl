@@ -7,29 +7,43 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
-	"github.com/pkg/errors"
 )
 
-type Admin interface {
+type IKafAdmin interface {
 	GetClusterDetails() ([]kafka.BrokerMetadata, error)
 	GetAllTopics() (map[string]kafka.TopicMetadata, error)
 	CreateTopic(topic string, numParts, replicationFactor int) error
 	DeleteTopic(topic string) error
 	DescribeTopic(topic string) (kafka.DescribeTopicsResult, error)
-	ListOffsets(topicName string, partition int) error
+	GetListOffsets(topicName string, partition int) error
+	Close()
 }
 
-type KafAdmin struct{}
+type KafAdmin struct {
+	admin IRdAdminClient
+}
+
+var NewKafAdmin = CreateKafAdmin
+
+var kafkaAdminInstance IKafAdmin
+
+func CreateKafAdmin() (IKafAdmin, error) {
+
+	if kafkaAdminInstance == nil {
+		adminClient, err := CreateAdminClient()
+		if err != nil {
+			return &KafAdmin{}, err
+		}
+		kafkaAdminInstance = &KafAdmin{admin: adminClient}
+	}
+
+	return kafkaAdminInstance, nil
+}
 
 func (ka *KafAdmin) GetClusterDetails() ([]kafka.BrokerMetadata, error) {
-	adminClient, err := CreateAdminClient()
-	if err != nil {
-		return nil, err
-	}
-	defer adminClient.Close()
 
 	logger.Debug("Fetching Brokers Details")
-	metadata, err := adminClient.GetMetadata(nil, true, 10000)
+	metadata, err := ka.admin.GetMetadata(nil, true, 10000)
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +59,7 @@ func (ka *KafAdmin) GetAllTopics() (map[string]kafka.TopicMetadata, error) {
 
 	logger.Info("Fetching all topics")
 
-	admin, err := CreateAdminClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to craete Admin client")
-	}
-	defer admin.Close()
-	logger.Debug("Admin client created successfully")
-
-	metadata, err := admin.GetMetadata(nil, true, 3000)
+	metadata, err := ka.admin.GetMetadata(nil, true, 3000)
 	if err != nil {
 		return nil, err
 	}
@@ -72,13 +79,6 @@ func (ka *KafAdmin) GetAllTopics() (map[string]kafka.TopicMetadata, error) {
 
 func (ka *KafAdmin) CreateTopic(topic string, numParts, replicationFactor int) error {
 
-	admin, err := CreateAdminClient()
-	if err != nil {
-		return err
-	}
-	defer admin.Close()
-	logger.Debug("Admin client created successfully")
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -86,7 +86,7 @@ func (ka *KafAdmin) CreateTopic(topic string, numParts, replicationFactor int) e
 	if err != nil {
 		return err
 	}
-	results, err := admin.CreateTopics(
+	results, err := ka.admin.CreateTopics(
 		ctx,
 		// Multiple topics can be created simultaneously
 		// by providing more TopicSpecification structs here.
@@ -110,13 +110,6 @@ func (ka *KafAdmin) CreateTopic(topic string, numParts, replicationFactor int) e
 
 func (ka *KafAdmin) DeleteTopic(topic string) error {
 
-	admin, err := CreateAdminClient()
-	if err != nil {
-		return err
-	}
-	defer admin.Close()
-	logger.Debug("Admin client created successfully")
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -126,7 +119,7 @@ func (ka *KafAdmin) DeleteTopic(topic string) error {
 	}
 
 	topics := []string{topic}
-	results, err := admin.DeleteTopics(ctx, topics, kafka.SetAdminOperationTimeout(maxDur))
+	results, err := ka.admin.DeleteTopics(ctx, topics, kafka.SetAdminOperationTimeout(maxDur))
 	if err != nil {
 		logger.Error("Failed to delete topics: ", "error", err)
 		return err
@@ -141,12 +134,6 @@ func (ka *KafAdmin) DeleteTopic(topic string) error {
 func (ka *KafAdmin) DescribeTopic(topic string) (kafka.DescribeTopicsResult, error) {
 
 	logger.Info("getting details for topic - ", "topic", topic)
-	admin, err := CreateAdminClient()
-	if err != nil {
-		return kafka.DescribeTopicsResult{}, err
-	}
-	defer admin.Close()
-	logger.Debug("kafka admin client created")
 
 	// Call DescribeTopics.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -154,7 +141,7 @@ func (ka *KafAdmin) DescribeTopic(topic string) (kafka.DescribeTopicsResult, err
 
 	includeAuthorizedOperations := true
 
-	describeTopicsResult, err := admin.DescribeTopics(
+	describeTopicsResult, err := ka.admin.DescribeTopics(
 		ctx,
 		kafka.NewTopicCollectionOfTopicNames([]string{topic}),
 		kafka.SetAdminOptionIncludeAuthorizedOperations(
@@ -193,14 +180,7 @@ func printTopicsDescriptionResult(describeTopicsResult kafka.DescribeTopicsResul
 	}
 }
 
-func (ka *KafAdmin) ListOffsets(topicName string, partition int) error {
-
-	admin, err := CreateAdminClient()
-	if err != nil {
-		return err
-	}
-	defer admin.Close()
-	logger.Debug("Admin client created successfully")
+func (ka *KafAdmin) GetListOffsets(topicName string, partition int) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -211,7 +191,7 @@ func (ka *KafAdmin) ListOffsets(topicName string, partition int) error {
 
 	topicPartitionOffsets[tp] = kafka.EarliestOffsetSpec
 
-	results, err := admin.ListOffsets(ctx, topicPartitionOffsets,
+	results, err := ka.admin.ListOffsets(ctx, topicPartitionOffsets,
 		kafka.SetAdminIsolationLevel(kafka.IsolationLevelReadCommitted))
 	if err != nil {
 		fmt.Printf("Failed to List offsets: %v\n", err)
@@ -229,4 +209,8 @@ func (ka *KafAdmin) ListOffsets(topicName string, partition int) error {
 
 	return nil
 
+}
+
+func (ka *KafAdmin) Close() {
+	ka.admin.Close()
 }
