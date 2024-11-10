@@ -11,7 +11,7 @@ import (
 )
 
 func (kah *KafAdminHandlers) createTopicFormHandler(w http.ResponseWriter, r *http.Request) {
-	files := []string{HOME_TEMPL_PATH, TOPIC_FORM_TEMPL_PATH}
+	files := []string{BASE_TEMPL_PATH, TOPIC_FORM_TEMPL_PATH}
 
 	funcMap := template.FuncMap{
 		"countPartitions": countPartitions,
@@ -86,7 +86,7 @@ func (kah *KafAdminHandlers) describeTopicHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	files := []string{HOME_TEMPL_PATH, TOPIC_DETAILS_TEMPL_PATH}
+	files := []string{BASE_TEMPL_PATH, TOPIC_DETAILS_TEMPL_PATH}
 
 	funcMap := template.FuncMap{
 		"countPartitions": countPartitions,

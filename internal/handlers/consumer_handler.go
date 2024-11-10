@@ -60,7 +60,7 @@ func (kch *KafConsumerHandlers) GetMessages(w http.ResponseWriter, r *http.Reque
 		"countIsrs":       countIsrs,
 		"inc":             incrementer}
 
-	files := []string{HOME_TEMPL_PATH, TOPIC_DETAILS_TEMPL_PATH, MESSAGE_TEMPL_PATH}
+	files := []string{BASE_TEMPL_PATH, TOPIC_DETAILS_TEMPL_PATH, MESSAGE_TEMPL_PATH}
 
 	tmpl := template.Must(template.New("viewMessages").Funcs(funcMap).ParseFiles(files...))
 	logger.Info("Rendering messages template")

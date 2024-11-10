@@ -1,83 +1,78 @@
-{{define "base"}}
-<!doctype html>
-<html lang='en' hx-boost="true">
+{{define "title"}}home{{end}}
 
-<head>
-    <meta charset='utf-8'>
-    <title>{{template "title" .}} - kafView</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <link rel="stylesheet" href="/static/styles.css">
-</head>
+{{ define "kaf-header" }}
+<header>
+    <h1><a href='/'>kafView</a></h1>
+</header>
+{{end}}
 
-<body>
-    {{ template "home-header"}}
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                {{ template "kaf-header"}}
-                <h2>Brokers</h2>
-                <hr>
-                <div id="cluster-info">
-                    {{template "clusterInfo" .}}
+{{define "home-header"}}
+<nav class="navbar sticky-top navbar-dark bg-dark">
+    <a class="navbar-brand text-center" href="/">home</a>
+</nav>
+<div class="row justify-content-center">
+    {{ template "kaf-header"}}
+</div>
+{{end}}
+
+{{ define "kaf-footer"}}
+<footer class="my-4 text-center">Powered by <a href='https://golang.org/'>Go</a></footer>
+{{end}}
+
+{{define "topics"}}
+<table class="table table-striped table-bordered">
+    <tr>
+        <th class="topic-header mb-3" >
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <span class="input-group-text">Topic</span>
                 </div>
-
-                <h2>Topics</h2>
-                <div>
-                    <button type="button" class="btn btn-info btn-sm" hx-get="/createtopicform" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
-                        New Topic
-                    </button>
+                <input type="text" class="form-control" id="search-input" placeholder="Search Topics"
+                onkeyup="filterTopics()">
+                <div class="input-group-append">
+                  <span class="input-group-text">{{len .Topics}}</span>
                 </div>
-                <hr>
-                <div hx-get="/topics" hx-trigger="every 300s" hx-target="#topics-list" hx-swap="innerHTML">
-                </div>
+              </div>
+        </th>
+        <th>Partitions</th>
+        <th>Replicas</th>
+        <th>Isrs</th>
+    </tr>
+    {{range $topicName, $topicMetadata := .Topics}}
+    <tr>
+        <td> 
+        <a href="#" hx-get="/topic-details?name={{$topicName}}" hx-trigger="click" hx-target="body" hx-swap="outerHTML">
+            {{$topicName}}
+        </a>
+        </td>
+        <td>{{len $topicMetadata.Partitions}}</td>
+        <td>{{countReplicas $topicMetadata.Partitions}}</td>
+        <td>{{countIsrs $topicMetadata.Partitions}}</td>
+    </tr>
+    {{end}}
+</table>
+{{end}}
 
-                <div id="topics-list">
-                    {{template "topics" .}}
-                </div>
+{{define "brokers"}}
+<table  class="table table-striped table-bordered">
+    <tr>
+        <th>Broker ID</th>
+        <th>Host</th>
+        <th>Port</th>
+    </tr>
+    {{range .Brokers}}
+    <tr>
+        <td>{{.ID}}</td>
+        <td>{{.Host}}</td>
+        <td>{{.Port}}</td>
+    </tr>
+    {{end}}
+</table>
+{{end}}
 
-                {{ template "kaf-footer"}}
-            </div>
-        </div>
-    </div>
-    <script src="/static/main.js"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htmx.org@2.0.3"
-        integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
-        crossorigin="anonymous"></script>
-
-        <script>
-            function filterTopics() {
-                var input, filter, table, tr, td, i, txtValue;
-                input = document.getElementById('search-input');
-                filter = input.value.toLowerCase();
-                table = document.querySelector("#topics-list table");
-                tr = table.getElementsByTagName("tr");
-    
-                for (i = 1; i < tr.length; i++) { // Start from 1 to skip the header row
-                    td = tr[i].getElementsByTagName("td")[0]; // Assuming the topic name is in the first column
-                    if (td) {
-                        txtValue = td.textContent || td.innerText;
-                        if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                            tr[i].style.display = "";
-                        } else {
-                            tr[i].style.display = "none";
-                        }
-                    }       
-                }
-            }
-        </script>
-
-</body>
-
-</html>
+{{define "clusterInfo"}}
+    {{template "brokers" .}}
+    {{ if eq .Status "DOWN" }}
+    <h5 style="color: red;">Status: Kafka server is down</h5>
+    {{end}}
 {{end}}

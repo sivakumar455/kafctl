@@ -63,9 +63,9 @@ func (kah *KafAdminHandlers) home(w http.ResponseWriter, r *http.Request) {
 		"countReplicas":   countReplicas,
 		"countIsrs":       countIsrs}
 
-	tmpl := template.Must(template.New("base").Funcs(funcMap).ParseFiles(files...))
+	tmpl := template.Must(template.New("home").Funcs(funcMap).ParseFiles(files...))
 
-	err = tmpl.ExecuteTemplate(w, "base", brokerInfo)
+	err = tmpl.ExecuteTemplate(w, "home", brokerInfo)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Internal server error", 500)
