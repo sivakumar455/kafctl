@@ -1,0 +1,90 @@
+{{define "publishform"}}
+
+<body>
+    {{ template "home-header"}}
+    <div class="container" id="topic-overview" style="padding: 20px;">
+        <h2 style="text-align: center">Publish Payload</h2>
+        <hr style="border-top: 2px solid #232323;" />
+        <div id="published-res"></div>
+        <div id="create-form">
+            <form hx-post="/publishpayload" hx-target="#published-res" hx-swap="innerHTML">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-8">
+                            <label class="form-label">Topic Name</label>
+                            <select name="topicName" class="form-control" id="inputGroupSelect06">
+                                {{range .}}
+                                {{if eq .Topic $.SelectedTopicName}}
+                                <option value="{{.Topic}}" selected>{{.Topic}}</option>
+                                {{else}}
+                                <option value="{{.Topic}}">{{.Topic}}</option>
+                                {{end}}
+                                {{else}}
+                                <option value="{{.Topic}}">{{.Topic}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-success float-end" type="submit"
+                                style="color: #eeeeee; font-size: 20px; font-weight: bold; width: 100px; height: 100px; border-radius: 50px; box-shadow: #232323 0px 0px 10px; border: solid 2px #eeeeee;">
+                                Publish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <hr style="border-top: 2px dotted #232323;" />
+                <div class="container">
+                    <div class="row">
+                        <div class="col">
+                            <input type="checkbox" class="form-check-input" name="publishOptionalHeaders" value="true"
+                                id="publishOptionalHeaders" />
+                            <label class="form-label">Publish Optional Headers</label>
+                        </div>
+                    </div>
+                    <div class="row" id="OptionalHeaders">
+                        <div class="col">
+                            <textarea name="optionalHeaders" style="height: inherit;" class="form-control"
+                                placeholder="Headers consist of key-value pairs separated by an equal sign (‘=’).Multiple key-value pairs are separated by commas (‘ , ’). For example:&#10;headerKey1=headerValue1,headerKey2=headerValue2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <hr style="border-top: 2px dotted #232323;" />
+                <div class="container">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Payload</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+
+                            {{if .PayloadText}}
+                            <textarea id="payload" name="payload" class="form-control"
+                                style="resize: none; height: 500px; overflow: scroll;"
+                                required>{{.PayloadText}}</textarea>
+                            {{else}}
+                            <textarea id="payload" name="payload" class="form-control"
+                                style="resize: none; height: 500px; overflow: scroll;" required></textarea>
+                            {{end}}
+                        </div>
+                        <div class="col">
+                            <div id="payloadJSONView"
+                                style="border: solid 1px; border-radius: 5px; width: 100%; height: 500px; padding: 20px; overflow: scroll;">
+                                This is JSON Preview Section.<br /> To view payload as JSON, put some content in payload
+                                section.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div>
+            {{if .ErrorMessage}}
+            <p>Error in publishing on topic {{if .TopicName}}{{.TopicName}}{{end}}: {{.ErrorMessage}}</p>
+            {{else if .Published}}
+            {{/* <p>Successfully published on topic <a href="/topic/{{.TopicName}}">{{.TopicName}}</a></p> */}}
+            {{end}}
+        </div>
+</body>
+
+{{end}}

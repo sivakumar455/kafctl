@@ -30,6 +30,9 @@ func (app *Application) Routes(admin services.IKafAdmin) (http.Handler, error) {
 
 	mux.HandleFunc("/view-messages", consumerHandler.GetMessages)
 
+	mux.HandleFunc("/publishform", publishForm)
+	mux.HandleFunc("/publishpayload", publishPayload)
+
 	// Register pprof handlers
 	// mux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 	// mux.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
