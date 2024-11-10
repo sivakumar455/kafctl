@@ -1,0 +1,27 @@
+{{define "viewMessages"}}
+<div>
+    <div class="container bg-white">
+        <h5>Messages</h5>
+        <div id="message-detail" class="container-fluid"></div>
+        <ul class="list-group">
+            {{range .}}
+            <li class="list-group-item bg-transparent border-1">
+                <div class="bg-light">
+                    <span class="badge bg-dark text-white">Partition:</span> {{printf "%d" .TopicPartition.Partition}} &nbsp;
+                    <span class="badge bg-dark text-white">Offset:</span> {{printf "%d" .TopicPartition.Offset}} &nbsp;
+                    <span class="badge bg-dark text-white">Key:</span> {{printf "%s" .Key}} &nbsp;
+                    <span class="badge bg-dark text-white">Timestamp:</span> {{printf "%s" .Timestamp }}
+                </div>
+                <div class="bg-light">
+                    <span class="badge bg-dark text-white">Headers:</span> {{printf "%s" .Headers}}
+                </div>
+                <div class="bg-light">
+                    <a href="#" class="toggle-msg"><i class="fa fa-chevron-circle-right">&nbsp;</i></a>
+                    <pre class="message-body">{{printf "%s" .Value}}</pre>
+                </div>
+            </li>
+            {{end}}
+        </ul>
+    </div>
+</div>
+{{end}}

@@ -44,8 +44,10 @@ func SetSSLConfig(cfgMap *kafka.ConfigMap, sslConfigFile string) error {
 
 func CreateConsumerConfig() (*kafka.ConfigMap, error) {
 	consumerCfg := &kafka.ConfigMap{
-		"bootstrap.servers": config.KafkaBroker,
-		"group.id":          config.GroupId,
+		"bootstrap.servers":  config.KafkaBroker,
+		"group.id":           config.GroupId,
+		"enable.auto.commit": false,
+		// "max.poll.records":   10,
 		"auto.offset.reset": "earliest",
 	}
 

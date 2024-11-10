@@ -13,6 +13,8 @@ func (app *Application) Routes(admin services.IKafAdmin) (http.Handler, error) {
 
 	handlers := NewKafkaHandlers(admin)
 
+	consumerHandler := NewKafConsumerHandlers()
+
 	fileServer := http.FileServer(http.Dir("./web/ui/static/"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
@@ -25,6 +27,8 @@ func (app *Application) Routes(admin services.IKafAdmin) (http.Handler, error) {
 
 	mux.HandleFunc("/topic-details", handlers.describeTopicHandler)
 	mux.HandleFunc("/delete-topic/", handlers.deleteTopicHandler)
+
+	mux.HandleFunc("/view-messages", consumerHandler.GetMessages)
 
 	// Register pprof handlers
 	// mux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))

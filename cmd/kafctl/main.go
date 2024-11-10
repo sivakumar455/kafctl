@@ -65,6 +65,12 @@ func main() {
 		}
 		defer admin.Close()
 
+		// consumer, err := services.NewConsumer()
+		// if err != nil {
+		// 	logger.Error("Error creating consumer")
+		// }
+		// defer consumer.Close()
+
 		mux, err := app.Routes(admin)
 		if err != nil {
 			logger.Error("Error creating routes", "error", err)

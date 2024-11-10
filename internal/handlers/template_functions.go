@@ -21,3 +21,11 @@ func countReplicas(partitions []kafka.PartitionMetadata) int {
 	}
 	return total
 }
+
+func incrementer() func() int {
+	i := 0
+	return func() int {
+		i++
+		return i
+	}
+}

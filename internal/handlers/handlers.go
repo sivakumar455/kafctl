@@ -15,6 +15,7 @@ const BASE_TEMPL_PATH string = "./web/ui/base.html"
 const HOME_TEMPL_PATH string = "./web/ui/home.html"
 const TOPIC_FORM_TEMPL_PATH string = "./web/ui/topicform.html"
 const TOPIC_DETAILS_TEMPL_PATH string = "./web/ui/topicdetails.html"
+const MESSAGE_TEMPL_PATH string = "./web/ui/messages.html"
 
 type KafAdminHandlers struct {
 	kafAdmin services.IKafAdmin
