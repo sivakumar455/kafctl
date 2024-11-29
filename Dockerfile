@@ -2,19 +2,32 @@ FROM golang:1.22-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
-RUN go mod tidy
+RUN apk update
+RUN apk add \
+    gcc \
+    # use mold for convenient extra linker inputs
+    mold \
+    musl-dev \
+    # explicitly install SASL package
+    cyrus-sasl-dev
 
-COPY . .
-RUN go build -o main ./cmd/kafctl
+COPY ./cmd /app/cmd
+COPY ./internal /app/internal
+COPY ./web /app/web
+COPY go.mod go.sum ./
+
+COPY app_config.json ssl_config.json ./
+
+RUN go mod download
+
+RUN go build -tags musl -o main ./cmd/kafctl
 
 # Stage 2: Final Image
 FROM alpine:latest
 
 WORKDIR /app
 
-COPY --from=builder /app/main ./
+COPY --from=builder /app/ ./
 
 COPY app_config.json ssl_config.json ./
 
