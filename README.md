@@ -11,7 +11,7 @@ topic details
 A CMD line tool for kafka server to view and manipulate kafka server operation through command line.
 
 #### UseCase: 
-To extract all messages in bulk from a PROD/QA env to analyse any messages.
+To extract all messages in bulk from a PROD/QA env to analyse any message.
         Especially for DLQ messages this could be more helpful.
 
 #### Usage:
