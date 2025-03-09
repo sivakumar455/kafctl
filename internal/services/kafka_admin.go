@@ -76,7 +76,10 @@ func CreateProducerConfig() (*kafka.ConfigMap, error) {
 }
 
 func NewAdminConfig() (*kafka.ConfigMap, error) {
-	adminCfg := &kafka.ConfigMap{"bootstrap.servers": config.KafkaBroker}
+	adminCfg := &kafka.ConfigMap{
+		"bootstrap.servers": config.KafkaBroker,
+		"debug":             "broker,protocol",
+	}
 
 	if config.EnableSSL {
 		err := SetSSLConfig(adminCfg, config.ConfigFile)
