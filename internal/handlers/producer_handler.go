@@ -7,6 +7,8 @@ import (
 	"kafctl/internal/services"
 	"log"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 func publishForm(w http.ResponseWriter, r *http.Request) {
@@ -49,10 +51,11 @@ func publishPayload(w http.ResponseWriter, r *http.Request) {
 		topicName := r.FormValue("topicName")
 		payload := r.FormValue("payload")
 		optionalHeaders := r.FormValue("optionalHeaders")
+		key := uuid.New().String()
 
 		logger.Info("Publish payload options", "topicName", topicName, "payload", payload, "optionalHeaders", optionalHeaders)
 
-		err := services.ProduceMessage(topicName, []byte(payload), []byte(payload), optionalHeaders)
+		err := services.ProduceMessage(topicName, key, optionalHeaders, []byte(payload))
 		if err != nil {
 			fmt.Fprintf(w, "Error publishing to topic  %s", topicName)
 			return
