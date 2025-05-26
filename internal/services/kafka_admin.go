@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/google/uuid"
 )
 
 type SSLConfig struct {
@@ -44,11 +45,13 @@ func SetSSLConfig(cfgMap *kafka.ConfigMap, sslConfigFile string) error {
 
 func CreateConsumerConfig() (*kafka.ConfigMap, error) {
 	consumerCfg := &kafka.ConfigMap{
-		"bootstrap.servers":  config.KafkaBroker,
-		"group.id":           config.GroupId,
+		"bootstrap.servers": config.KafkaBroker,
+		// "group.id":           config.GroupId,
 		"enable.auto.commit": false,
 		// "max.poll.records":   10,
-		"auto.offset.reset": "earliest",
+		"auto.offset.reset":    "earliest",
+		"group.id":             uuid.New().String(),
+		"enable.partition.eof": "true", // To get EOF events, useful for knowing when we've read to the end
 	}
 
 	if config.EnableSSL {

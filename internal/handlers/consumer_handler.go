@@ -46,7 +46,8 @@ func (kch *KafConsumerHandlers) GetMessages(w http.ResponseWriter, r *http.Reque
 	defer consumer.Close()
 
 	//var messages []*kafka.Message
-	msg, err := consumer.ConsumeMessage(topicName)
+	//msg, err := consumer.ConsumeMessage(topicName)
+	msg, err := consumer.GetLatestRecords(topicName, 20)
 	if err != nil {
 		fmt.Fprintf(w, "%v", "Error viewing messages")
 		return

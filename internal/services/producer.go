@@ -76,6 +76,7 @@ func ProduceMessage(topic, key, headerMap string, data []byte) error {
 			slog.Error("Failed to deliver message ", "error", msg.TopicPartition.Error)
 			return err
 		}
+		slog.Info("Published message to ", "topic", *msg.TopicPartition.Topic, "partition", msg.TopicPartition.Partition, "offset", msg.TopicPartition.Offset)
 	case <-time.After(10 * time.Second):
 		slog.Error("Message delivery timed out")
 		return fmt.Errorf("message delivery timed out")

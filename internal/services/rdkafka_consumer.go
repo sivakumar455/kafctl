@@ -26,20 +26,20 @@ type RdConsumer struct {
 	rdc IRdConsumer
 }
 
-func CreateRdConsumer() (IRdConsumer, error) {
+// func CreateRdConsumer() (*kafka.Consumer, error) {
 
-	// Create a new Kafka consumer with SSL configuration
-	consumerCfg, err := CreateConsumerConfig()
-	if err != nil {
-		return nil, err
-	}
-	c, err := kafka.NewConsumer(consumerCfg)
-	if err != nil {
-		logger.Error("Error creating consumer ", "error", err)
-		return nil, err
-	}
-	return c, nil
-}
+// 	// Create a new Kafka consumer with SSL configuration
+// 	consumerCfg, err := CreateConsumerConfig()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	c, err := kafka.NewConsumer(consumerCfg)
+// 	if err != nil {
+// 		logger.Error("Error creating consumer ", "error", err)
+// 		return nil, err
+// 	}
+// 	return c, nil
+// }
 
 func (c *RdConsumer) Close() error {
 
