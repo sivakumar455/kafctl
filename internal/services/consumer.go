@@ -36,6 +36,7 @@ type IConsumer interface {
 	ConsumeMessages(topic string) error
 	ConsumeMessage(topic string) ([]*kafka.Message, error)
 	GetLatestRecords(topic string, countPerPartition int) ([]*kafka.Message, error)
+	GetMessagesInfo(topic string) ([]TopicDetails, error)
 	ConsumeMessagesInFile() error
 	Close() error
 }
@@ -158,6 +159,70 @@ func (c *Consumer) ConsumeMessage(topic string) ([]*kafka.Message, error) {
 		}
 	}
 	return msgRes, nil
+}
+
+type TopicDetails struct {
+	PartitionId int32
+	StartOffset int64
+	EndOffset   int64
+	Size        int64
+}
+
+func (c *Consumer) GetMessagesInfo(topic string) ([]TopicDetails, error) {
+
+	consumer := c.consumer
+	defer consumer.Close()
+
+	log.Printf("Consumer created for topic %s", topic)
+
+	// 1. Determine partitions for the topic
+	metadata, err := consumer.GetMetadata(&topic, false, metadataTimeoutMs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metadata for topic %s: %w", topic, err)
+	}
+
+	topicMetadata, ok := metadata.Topics[topic]
+	if !ok {
+		return nil, fmt.Errorf("topic '%s' not found in metadata", topic)
+	}
+
+	if topicMetadata.Error.Code() != kafka.ErrNoError {
+		kafkaErr := kafka.NewError(topicMetadata.Error.Code(), "", false) // Description can be empty or more specific if available
+		return nil, fmt.Errorf("error in metadata for topic '%s': %w", topic, kafkaErr)
+	}
+
+	if len(topicMetadata.Partitions) == 0 {
+		log.Printf("Topic %s has no partitions.", topic)
+		return nil, nil
+	}
+	log.Printf("Topic %s has %d partitions.", topic, len(topicMetadata.Partitions))
+
+	topicDetails := []TopicDetails{}
+
+	for _, pMeta := range topicMetadata.Partitions {
+		partitionID := pMeta.ID
+		if pMeta.Error.Code() != kafka.ErrNoError {
+			log.Printf("Skipping partition %d for topic %s due to metadata error: %v", partitionID, topic, kafka.NewError(pMeta.Error.Code(), "", false))
+			continue
+		}
+
+		lowWm, highWm, err := consumer.QueryWatermarkOffsets(topic, partitionID, metadataTimeoutMs)
+		if err != nil {
+			// Log and continue, or return error. For robustness, let's try to process other partitions.
+			log.Printf("Warning: failed to query watermark offsets for %s [%d]: %v. Skipping this partition.", topic, partitionID, err)
+			continue
+		}
+
+		topicDet := TopicDetails{PartitionId: partitionID, StartOffset: lowWm, EndOffset: highWm, Size: highWm - lowWm}
+
+		topicDetails = append(topicDetails, topicDet)
+
+		log.Printf("Partition %d: LowWM: %d, HighWM: %d", partitionID, lowWm, highWm)
+
+	}
+
+	return topicDetails, nil
+
 }
 
 // GetLatestRecords fetches the latest 'count' records from each partition of the topic.

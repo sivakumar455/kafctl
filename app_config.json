@@ -1,5 +1,5 @@
 {
-    "kafkaBroker": "host.docker.internal:30092",
+    "kafkaBroker": "localhost:30092",
     "topic": "kaf-topic-test",
     "groupId": "kaf-consumer-group-test",
     "sslConfigFile": "ssl_config.json",

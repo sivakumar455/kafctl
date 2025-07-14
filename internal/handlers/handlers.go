@@ -16,6 +16,7 @@ const HOME_TEMPL_PATH string = "./web/ui/home.html"
 const TOPIC_FORM_TEMPL_PATH string = "./web/ui/topicform.html"
 const TOPIC_DETAILS_TEMPL_PATH string = "./web/ui/topicdetails.html"
 const MESSAGE_TEMPL_PATH string = "./web/ui/messages.html"
+const VIEW_TOPIC_TEMPL_PATH string = "./web/ui/view_topic.html"
 const PUBLISH_FORM_TEMPL_PATH string = "./web/ui/publishform.html"
 
 type KafAdminHandlers struct {

@@ -28,7 +28,8 @@ func (app *Application) Routes(admin services.IKafAdmin) (http.Handler, error) {
 	mux.HandleFunc("/topic-details", handlers.describeTopicHandler)
 	mux.HandleFunc("/delete-topic/", handlers.deleteTopicHandler)
 
-	mux.HandleFunc("/view-messages", consumerHandler.GetMessages)
+	mux.HandleFunc("/view-topic", consumerHandler.ViewTopic)
+	mux.HandleFunc("/view-messages", consumerHandler.ViewMessages)
 
 	mux.HandleFunc("/publishform", publishForm)
 	mux.HandleFunc("/publishpayload", publishPayload)

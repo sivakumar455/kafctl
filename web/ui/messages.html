@@ -1,25 +1,39 @@
 {{define "viewMessages"}}
-    <div class="container bg-white">
-        <h5>Messages</h5>
-        <div id="message-detail" class="container-fluid"></div>
-        <ul class="list-group">
-            {{range .}}
-            <li class="list-group-item bg-transparent border-1">
-                <div class="bg-light">
-                    <span class="badge bg-dark text-white">Partition:</span> {{printf "%d" .TopicPartition.Partition}} &nbsp;
-                    <span class="badge bg-dark text-white">Offset:</span> {{printf "%d" .TopicPartition.Offset}} &nbsp;
-                    <span class="badge bg-dark text-white">Key:</span> {{printf "%s" .Key}} &nbsp;
-                    <span class="badge bg-dark text-white">Timestamp:</span> {{printf "%s" .Timestamp }}
-                </div>
-                <div class="bg-light">
-                    <span class="badge bg-dark text-white">Headers:</span> {{printf "%s" .Headers}}
-                </div>
-                <div class="bg-light">
-                    <a href="#" class="toggle-msg"><i class="fa fa-chevron-circle-right">&nbsp;</i></a>
-                    <pre class="message-body">{{printf "%s" .Value}}</pre>
-                </div>
-            </li>
+
+<div class="container bg-white pt-3">
+    <h5>Messages</h5>
+    <!-- <div id="message-detail" class="container-fluid"></div> --> <!-- Appears unused for this list -->
+    <ul class="list-group list-group-flush">
+        {{range .Message}}
+        <li class="list-group-item px-0 py-2">
+            <div class="message-metadata bg-light p-2 mb-1 rounded-top small">
+                <span class="badge bg-secondary text-white me-1">Partition:</span><span class="me-3">{{printf "%d" .TopicPartition.Partition}}</span>
+                <span class="badge bg-secondary text-white me-1">Offset:</span><span class="me-3">{{printf "%d" .TopicPartition.Offset}}</span>
+                <span class="badge bg-secondary text-white me-1">Key:</span><span class="me-3 text-break">{{printf "%s" .Key}}</span>
+                <span class="badge bg-secondary text-white me-1">Timestamp:</span><span class="text-break">{{printf "%s" .Timestamp }}</span>
+            </div>
+            {{if .Headers}}
+            <div class="message-headers bg-light p-2 mb-1 small">
+                <span class="badge bg-secondary text-white me-1">Headers:</span>
+                <pre class="d-inline-block mb-0" style="white-space: pre-wrap; word-break: break-all;">{{printf "%s" .Headers}}</pre>
+            </div>
             {{end}}
-        </ul>
-    </div>
+            <div class="message-content-container bg-light p-2 rounded-bottom">
+                <div class="d-flex align-items-center mb-1">
+                    <a href="#" role="button" class="toggle-msg btn btn-sm btn-outline-secondary me-2">
+                        <i class="bi bi-arrows-expand"></i> <span class="toggle-text visually-hidden">Expand</span>
+                    </a>
+                    <a href="#" role="button" class="copy-msg btn btn-sm btn-outline-secondary" title="Copy message">
+                        <i class="bi bi-clipboard"></i> <span class="copy-text visually-hidden">Copy</span>
+                    </a>
+                    <span class="ms-1 fst-italic text-muted small message-type-indicator"></span>
+                </div>
+                <pre class="message-body border p-2 rounded" style="background-color: #f8f9fa; font-size: 0.875em;">{{printf "%s" .Value}}</pre>
+            </div>
+        </li>
+        {{else}}
+        <li class="list-group-item">No messages found for the selected criteria.</li>
+        {{end}}
+    </ul>
+</div>
 {{end}}
