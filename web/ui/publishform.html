@@ -5,9 +5,9 @@
     <div class="container" id="topic-overview" style="padding: 20px;">
         <h2 style="text-align: center">Publish Payload</h2>
         <hr style="border-top: 2px solid #232323;" />
-        <div id="published-res"></div>
+        <div id="published-res" style="margin-top: 20px;"></div>
         <div id="create-form">
-            <form hx-post="/publishpayload" hx-target="#published-res" hx-swap="innerHTML">
+            <form hx-post="/publishpayload" hx-target="#published-res" hx-swap="innerHTML" onsubmit="collectHeaders()">
                 <div class="container">
                     <div class="row">
                         <div class="col-8">
@@ -37,14 +37,33 @@
                     <div class="row">
                         <div class="col">
                             <input type="checkbox" class="form-check-input" name="publishOptionalHeaders" value="true"
-                                id="publishOptionalHeaders" />
+                                id="publishOptionalHeaders" onchange="toggleHeadersSection()" />
                             <label class="form-label">Publish Optional Headers</label>
                         </div>
                     </div>
-                    <div class="row" id="OptionalHeaders">
-                        <div class="col">
-                            <textarea name="optionalHeaders" style="height: inherit;" class="form-control"
-                                placeholder="Headers consist of key-value pairs separated by an equal sign (‘=’).Multiple key-value pairs are separated by commas (‘ , ’). For example:&#10;headerKey1=headerValue1,headerKey2=headerValue2"></textarea>
+                    <div class="row" id="OptionalHeaders" style="display: none;">
+                        <div class="col-12">
+                            <div id="headers-container" style="margin-top: 15px;">
+                                <div class="header-row mb-2 row g-2 align-items-end">
+                                    <div class="col-md-5">
+                                        <label class="form-label small">Header Key</label>
+                                        <input type="text" class="form-control header-key" placeholder="Header Key" />
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small">Header Value</label>
+                                        <input type="text" class="form-control header-value" placeholder="Header Value" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-sm btn-danger remove-header w-100" onclick="removeHeaderRow(this)" style="display: none;">
+                                            <i class="bi bi-trash"></i> Remove
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success add-header w-100" onclick="addHeaderRow()">
+                                            <i class="bi bi-plus"></i> Add
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="optionalHeaders" id="optionalHeaders" />
                         </div>
                     </div>
                 </div>
@@ -85,6 +104,181 @@
             {{/* <p>Successfully published on topic <a href="/topic/{{.TopicName}}">{{.TopicName}}</a></p> */}}
             {{end}}
         </div>
+    <script>
+        function toggleHeadersSection() {
+            const checkbox = document.getElementById('publishOptionalHeaders');
+            const headersSection = document.getElementById('OptionalHeaders');
+            if (checkbox && headersSection) {
+                if (checkbox.checked) {
+                    headersSection.style.display = 'block';
+                } else {
+                    headersSection.style.display = 'none';
+                }
+            }
+        }
+
+        function addHeaderRow() {
+            const container = document.getElementById('headers-container');
+            const firstRow = container.querySelector('.header-row');
+            
+            if (!firstRow) return;
+            
+            // Hide add buttons and show remove buttons on all existing rows
+            const existingRows = container.querySelectorAll('.header-row');
+            existingRows.forEach(row => {
+                const rowAddBtn = row.querySelector('.add-header');
+                const rowRemoveBtn = row.querySelector('.remove-header');
+                if (rowAddBtn) rowAddBtn.style.display = 'none';
+                if (rowRemoveBtn) rowRemoveBtn.style.display = 'inline-block';
+            });
+            
+            // Create new row
+            const newRow = firstRow.cloneNode(true);
+            
+            // Clear input values
+            const keyInput = newRow.querySelector('.header-key');
+            const valueInput = newRow.querySelector('.header-value');
+            if (keyInput) keyInput.value = '';
+            if (valueInput) valueInput.value = '';
+            
+            // Update button visibility for new row (it becomes the last row, so show Add button)
+            const removeBtn = newRow.querySelector('.remove-header');
+            const addBtn = newRow.querySelector('.add-header');
+            
+            // Show add button and hide remove button for new row (since it's the last one)
+            if (addBtn) addBtn.style.display = 'inline-block';
+            if (removeBtn) removeBtn.style.display = 'none';
+            
+            container.appendChild(newRow);
+        }
+
+        function removeHeaderRow(button) {
+            const row = button.closest('.header-row');
+            const container = document.getElementById('headers-container');
+            const allRows = container.querySelectorAll('.header-row');
+            
+            if (allRows.length > 1 && row) {
+                row.remove();
+                
+                // Update buttons after removal
+                const remainingRows = container.querySelectorAll('.header-row');
+                if (remainingRows.length > 0) {
+                    // Show add button on the last row, hide remove button
+                    const lastRow = remainingRows[remainingRows.length - 1];
+                    const lastAddBtn = lastRow.querySelector('.add-header');
+                    const lastRemoveBtn = lastRow.querySelector('.remove-header');
+                    if (lastAddBtn) lastAddBtn.style.display = 'inline-block';
+                    if (lastRemoveBtn) lastRemoveBtn.style.display = 'none';
+                    
+                    // Show remove buttons on all other rows
+                    remainingRows.forEach((r, index) => {
+                        if (r !== lastRow) {
+                            const rRemoveBtn = r.querySelector('.remove-header');
+                            const rAddBtn = r.querySelector('.add-header');
+                            if (rRemoveBtn) rRemoveBtn.style.display = 'inline-block';
+                            if (rAddBtn) rAddBtn.style.display = 'none';
+                        }
+                    });
+                }
+            }
+        }
+
+        function collectHeaders() {
+            const headersContainer = document.getElementById('headers-container');
+            const hiddenInput = document.getElementById('optionalHeaders');
+            
+            if (!headersContainer || !hiddenInput) return;
+            
+            const headerRows = headersContainer.querySelectorAll('.header-row');
+            const headers = [];
+            
+            headerRows.forEach(row => {
+                const keyInput = row.querySelector('.header-key');
+                const valueInput = row.querySelector('.header-value');
+                
+                if (keyInput && valueInput) {
+                    const key = keyInput.value.trim();
+                    const value = valueInput.value.trim();
+                    
+                    if (key && value) {
+                        headers.push(key + '=' + value);
+                    }
+                }
+            });
+            
+            // Set the hidden input value in the format expected by backend: "key1=val1,key2=val2"
+            hiddenInput.value = headers.join(',');
+        }
+        
+        // Handle HTMX form submission
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            const form = event.detail.elt;
+            if (form && form.tagName === 'FORM' && form.closest('#create-form')) {
+                collectHeaders();
+            }
+        });
+        
+        // Format and display alert after HTMX response
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            // Only process if the target is published-res
+            if (event.detail.target && event.detail.target.id === 'published-res') {
+                const publishedRes = document.getElementById('published-res');
+                if (publishedRes) {
+                    // Get the raw text content (before any formatting)
+                    let content = '';
+                    if (publishedRes.firstChild) {
+                        content = publishedRes.firstChild.textContent || publishedRes.firstChild.innerText || publishedRes.textContent || '';
+                    } else {
+                        content = publishedRes.textContent || publishedRes.innerText || '';
+                    }
+                    content = content.trim();
+                    
+                    // Check if it's a success or error message
+                    if (content.startsWith('SUCCESS:')) {
+                        const topicName = content.replace('SUCCESS:', '').trim();
+                        publishedRes.innerHTML = `
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <strong><i class="bi bi-check-circle-fill"></i> Success!</strong> Message published successfully to topic <strong>${escapeHtml(topicName)}</strong>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                    } else if (content.startsWith('ERROR:')) {
+                        const parts = content.replace('ERROR:', '').split(':');
+                        const topicName = parts[0] || 'unknown';
+                        const errorMsg = parts.slice(1).join(':') || 'Unknown error';
+                        publishedRes.innerHTML = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="bi bi-exclamation-triangle-fill"></i> Error!</strong> Failed to publish message to topic <strong>${escapeHtml(topicName)}</strong>. Error: ${escapeHtml(errorMsg)}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                    }
+                    
+                    // Scroll to alert and add animation
+                    const alert = publishedRes.querySelector('.alert');
+                    if (alert) {
+                        // Scroll to alert smoothly
+                        alert.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Add a subtle pulse animation
+                        alert.style.animation = 'pulse 0.5s ease-in-out';
+                        setTimeout(() => {
+                            alert.style.animation = '';
+                        }, 500);
+                    }
+                }
+            }
+        });
+        
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+        crossorigin="anonymous"></script>
 </body>
 
 {{end}}
