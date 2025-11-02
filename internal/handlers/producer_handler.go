@@ -57,11 +57,11 @@ func publishPayload(w http.ResponseWriter, r *http.Request) {
 
 		err := services.ProduceMessage(topicName, key, optionalHeaders, []byte(payload))
 		if err != nil {
-			fmt.Fprintf(w, "Error publishing to topic  %s", topicName)
+			fmt.Fprintf(w, "ERROR:%s:%v", topicName, err)
 			return
 		}
 
-		fmt.Fprintf(w, "Topic %s published successfully!", topicName)
+		fmt.Fprintf(w, "SUCCESS:%s", topicName)
 	} else {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 	}

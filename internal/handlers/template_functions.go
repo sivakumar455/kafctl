@@ -7,19 +7,27 @@ func countPartitions(partitions []kafka.PartitionMetadata) int {
 }
 
 func countIsrs(partitions []kafka.PartitionMetadata) int {
-	total := 0
-	for _, partition := range partitions {
-		total += len(partition.Isrs)
+	if len(partitions) == 0 {
+		return 0
 	}
-	return total
+	// Return the ISR count for the first partition (all partitions should have same replication factor)
+	// If partitions have different ISR counts, return the minimum (indicating some are out of sync)
+	minIsrs := len(partitions[0].Isrs)
+	for _, partition := range partitions {
+		if len(partition.Isrs) < minIsrs {
+			minIsrs = len(partition.Isrs)
+		}
+	}
+	return minIsrs
 }
 
 func countReplicas(partitions []kafka.PartitionMetadata) int {
-	total := 0
-	for _, partition := range partitions {
-		total += len(partition.Replicas)
+	if len(partitions) == 0 {
+		return 0
 	}
-	return total
+	// Return the replication factor (replicas per partition)
+	// All partitions in a topic should have the same replication factor
+	return len(partitions[0].Replicas)
 }
 
 func incrementer() func() int {

@@ -7,6 +7,7 @@ import (
 	"kafctl/internal/models"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -33,12 +34,45 @@ func (kah *KafAdminHandlers) createTopicHandler(w http.ResponseWriter, r *http.R
 
 	if r.Method == http.MethodPost {
 		topicName := r.FormValue("topicName")
+		if topicName == "" {
+			fmt.Fprintf(w, "Error: Topic name is required")
+			return
+		}
+
 		numPartitions := 1
 		numReplicas := 1
 
-		err := kah.kafAdmin.CreateTopic(topicName, numPartitions, numReplicas)
+		// Parse partitions from form
+		if partitionsStr := r.FormValue("numPartitions"); partitionsStr != "" {
+			if parsed, err := strconv.Atoi(partitionsStr); err == nil && parsed > 0 {
+				numPartitions = parsed
+			}
+		}
+
+		// Parse replicas from form
+		if replicasStr := r.FormValue("numReplicas"); replicasStr != "" {
+			if parsed, err := strconv.Atoi(replicasStr); err == nil && parsed > 0 {
+				numReplicas = parsed
+			}
+		}
+
+		// Validate replication factor against available brokers
+		brokers, err := kah.kafAdmin.GetClusterDetails()
 		if err != nil {
-			fmt.Fprintf(w, "%v", "Error creating topic")
+			logger.Error("Error getting cluster details for validation", "error", err)
+			fmt.Fprintf(w, "Error: Unable to validate replication factor. Cannot connect to Kafka cluster.")
+			return
+		}
+
+		numBrokers := len(brokers)
+		if numReplicas > numBrokers {
+			fmt.Fprintf(w, "Error: Replication factor (%d) cannot exceed the number of available brokers (%d). Please reduce the replication factor to %d or less.", numReplicas, numBrokers, numBrokers)
+			return
+		}
+
+		err = kah.kafAdmin.CreateTopic(topicName, numPartitions, numReplicas)
+		if err != nil {
+			fmt.Fprintf(w, "Error creating topic: %v", err)
 			return
 		}
 

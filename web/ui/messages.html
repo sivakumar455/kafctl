@@ -1,39 +1,395 @@
 {{define "viewMessages"}}
 
 <div class="container bg-white pt-3">
-    <h5>Messages</h5>
-    <!-- <div id="message-detail" class="container-fluid"></div> --> <!-- Appears unused for this list -->
-    <ul class="list-group list-group-flush">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Messages</h5>
+        <div class="d-flex align-items-center">
+            <label for="message-search" class="form-label mb-0 me-2">Search Messages:</label>
+            <input type="text" class="form-control form-control-sm" id="message-search" 
+                   placeholder="Search in message content, key, headers..." style="width: 300px;"
+                   onkeyup="searchMessages()">
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="clearMessageSearch()">
+                <i class="bi bi-x-circle"></i> Clear
+            </button>
+        </div>
+    </div>
+    
+    <div id="messages-list">
         {{range .Message}}
-        <li class="list-group-item px-0 py-2">
-            <div class="message-metadata bg-light p-2 mb-1 rounded-top small">
-                <span class="badge bg-secondary text-white me-1">Partition:</span><span class="me-3">{{printf "%d" .TopicPartition.Partition}}</span>
-                <span class="badge bg-secondary text-white me-1">Offset:</span><span class="me-3">{{printf "%d" .TopicPartition.Offset}}</span>
-                <span class="badge bg-secondary text-white me-1">Key:</span><span class="me-3 text-break">{{printf "%s" .Key}}</span>
-                <span class="badge bg-secondary text-white me-1">Timestamp:</span><span class="text-break">{{printf "%s" .Timestamp }}</span>
+        <div class="card shadow-sm mb-3 message-item" data-partition="{{printf "%d" .TopicPartition.Partition}}" 
+            data-key="{{printf "%s" .Key}}" data-value="{{printf "%s" .Value}}">
+            <!-- Message Header -->
+            <div class="card-header bg-primary bg-opacity-10 border-bottom">
+                <div class="d-flex justify-content-between align-items-start flex-wrap">
+                    <div class="d-flex flex-wrap gap-3 align-items-center mb-2">
+                        <div class="message-metadata-item">
+                            <i class="bi bi-layers text-primary me-1"></i>
+                            <span class="fw-bold">Partition:</span>
+                            <span class="badge bg-primary partition-number">{{printf "%d" .TopicPartition.Partition}}</span>
+                        </div>
+                        <div class="message-metadata-item">
+                            <i class="bi bi-123 text-info me-1"></i>
+                            <span class="fw-bold">Offset:</span>
+                            <code class="text-dark">{{printf "%d" .TopicPartition.Offset}}</code>
+                        </div>
+                        {{if .Key}}
+                        <div class="message-metadata-item">
+                            <i class="bi bi-key text-warning me-1"></i>
+                            <span class="fw-bold">Key:</span>
+                            <code class="text-break">{{printf "%s" .Key}}</code>
+                        </div>
+                        {{end}}
+                    </div>
+                    <div class="message-metadata-item">
+                        <i class="bi bi-clock text-secondary me-1"></i>
+                        <span class="fw-bold">Time:</span>
+                        <span class="text-muted small">{{printf "%s" .Timestamp}}</span>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Headers Section (if present) -->
             {{if .Headers}}
-            <div class="message-headers bg-light p-2 mb-1 small">
-                <span class="badge bg-secondary text-white me-1">Headers:</span>
-                <pre class="d-inline-block mb-0" style="white-space: pre-wrap; word-break: break-all;">{{printf "%s" .Headers}}</pre>
+            <div class="card-body py-2 border-bottom">
+                <div class="d-flex align-items-center mb-2">
+                    <h6 class="mb-0 me-2">
+                        <i class="bi bi-tags text-success me-1"></i>Headers
+                    </h6>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto headers-toggle-btn" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#headers-{{printf "%d" .TopicPartition.Offset}}" 
+                            aria-expanded="false" aria-controls="headers-{{printf "%d" .TopicPartition.Offset}}"
+                            onclick="void(0)">
+                        <i class="bi bi-chevron-down"></i> <span class="toggle-headers-text">Show</span>
+                    </button>
+                </div>
+                <div class="collapse" id="headers-{{printf "%d" .TopicPartition.Offset}}" aria-expanded="false">
+                    <div class="headers-display p-2 bg-light rounded mt-2">
+                        <!-- Headers will be parsed and displayed by JavaScript -->
+                        <div class="headers-placeholder" data-headers-raw="{{if .Headers}}{{range $index, $header := .Headers}}{{if $index}}, {{end}}{{$header.Key}}: {{printf "%s" $header.Value}}{{end}}{{end}}"></div>
+                    </div>
+                </div>
             </div>
             {{end}}
-            <div class="message-content-container bg-light p-2 rounded-bottom">
-                <div class="d-flex align-items-center mb-1">
-                    <a href="#" role="button" class="toggle-msg btn btn-sm btn-outline-secondary me-2">
-                        <i class="bi bi-arrows-expand"></i> <span class="toggle-text visually-hidden">Expand</span>
-                    </a>
-                    <a href="#" role="button" class="copy-msg btn btn-sm btn-outline-secondary" title="Copy message">
-                        <i class="bi bi-clipboard"></i> <span class="copy-text visually-hidden">Copy</span>
-                    </a>
-                    <span class="ms-1 fst-italic text-muted small message-type-indicator"></span>
+            
+            <!-- Message Content -->
+            <div class="card-body message-content-container">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <h6 class="mb-0">
+                            <i class="bi bi-file-text text-primary me-1"></i>Message Content
+                        </h6>
+                        <span class="badge bg-secondary message-type-indicator"></span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="toggle-msg btn btn-sm btn-outline-primary" role="button" title="Toggle expand/collapse">
+                            <i class="bi bi-arrows-expand"></i> <span class="toggle-text">Expand</span>
+                        </button>
+                        <button class="copy-msg btn btn-sm btn-outline-success" role="button" title="Copy message content">
+                            <i class="bi bi-clipboard"></i> <span class="copy-text">Copy</span>
+                        </button>
+                    </div>
                 </div>
-                <pre class="message-body border p-2 rounded" style="background-color: #f8f9fa; font-size: 0.875em;">{{printf "%s" .Value}}</pre>
+                <div class="message-body-wrapper">
+                    <pre class="message-body p-3 rounded border bg-light mb-0 collapsed" style="font-size: 0.875rem; font-family: 'Courier New', monospace; background-color: #ffffff !important;">{{printf "%s" .Value}}</pre>
+                </div>
             </div>
-        </li>
+        </div>
         {{else}}
-        <li class="list-group-item">No messages found for the selected criteria.</li>
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                <p class="text-muted mt-3 mb-0">No messages found for the selected criteria.</p>
+            </div>
+        </div>
         {{end}}
-    </ul>
+    </div>
 </div>
+
+<script src="/static/main.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+    crossorigin="anonymous"></script>
+<script>
+    // Search messages by text content
+    function searchMessages() {
+        const searchInput = document.getElementById('message-search');
+        if (!searchInput) return;
+        
+        const searchValue = searchInput.value.trim().toLowerCase();
+        const messageItems = document.querySelectorAll('.message-item');
+        let visibleCount = 0;
+
+        messageItems.forEach(item => {
+            let matches = false;
+            
+            if (searchValue === '') {
+                // Show all messages if search is empty
+                matches = true;
+            } else {
+                // Get text from data attributes and visible elements
+                const messageValue = (item.getAttribute('data-value') || '').toLowerCase();
+                const messageKey = (item.getAttribute('data-key') || '').toLowerCase();
+                
+                // Get text content from message body (the actual displayed content)
+                const messageBody = item.querySelector('.message-body');
+                const bodyText = messageBody ? messageBody.textContent.toLowerCase() : '';
+                
+                // Get headers text from collapsed section
+                const headersElement = item.querySelector('.collapse pre, .card-body pre');
+                const headersText = headersElement ? headersElement.textContent.toLowerCase() : '';
+                
+                // Get metadata text (partition, offset, timestamp)
+                const partitionNum = item.querySelector('.partition-number')?.textContent?.toLowerCase() || '';
+                const cardHeader = item.querySelector('.card-header');
+                const metadataText = cardHeader ? cardHeader.textContent.toLowerCase() : '';
+                
+                // Check if search term matches any field
+                if (bodyText.includes(searchValue) ||
+                    messageValue.includes(searchValue) ||
+                    messageKey.includes(searchValue) ||
+                    headersText.includes(searchValue) ||
+                    partitionNum.includes(searchValue) ||
+                    metadataText.includes(searchValue)) {
+                    matches = true;
+                }
+            }
+            
+            if (matches) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Show message if no results found
+        const noResultsMsg = document.getElementById('no-results-msg');
+        const messagesList = document.getElementById('messages-list');
+        
+        if (visibleCount === 0 && searchValue !== '') {
+            if (!noResultsMsg && messagesList) {
+                const noResult = document.createElement('div');
+                noResult.className = 'card';
+                noResult.id = 'no-results-msg';
+                noResult.innerHTML = `
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-3 mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No messages found containing <strong>"${escapeHtml(searchValue)}"</strong>
+                        </p>
+                    </div>
+                `;
+                messagesList.appendChild(noResult);
+            } else if (noResultsMsg) {
+                noResultsMsg.querySelector('p').innerHTML = `
+                    <i class="bi bi-info-circle me-2"></i>
+                    No messages found containing <strong>"${escapeHtml(searchValue)}"</strong>
+                `;
+            }
+        } else {
+            if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
+        }
+    }
+
+    // Clear message search
+    function clearMessageSearch() {
+        const searchInput = document.getElementById('message-search');
+        if (searchInput) {
+            searchInput.value = '';
+            searchMessages();
+        }
+    }
+    
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Parse and format headers
+    function formatHeaders() {
+        document.querySelectorAll('.headers-placeholder').forEach(placeholder => {
+            // Try to get from data attribute first (formatted by template), then fallback to textContent
+            let headersText = placeholder.getAttribute('data-headers-raw') || placeholder.textContent.trim();
+            
+            if (!headersText) {
+                const container = placeholder.closest('.headers-display');
+                if (container) {
+                    container.innerHTML = '<p class="text-muted mb-0"><em>No headers to display</em></p>';
+                }
+                return;
+            }
+            
+            const container = placeholder.closest('.headers-display');
+            if (!container) return;
+            
+            // Parse headers (format: "key1: value1, key2: value2" - comma+space separated)
+            const headers = [];
+            
+            // Remove any trailing comma and space
+            let cleanText = headersText.replace(/,\s*$/, '').trim();
+            
+            if (!cleanText) {
+                container.innerHTML = '<p class="text-muted mb-0"><em>No headers to display</em></p>';
+                return;
+            }
+            
+            // Split by ", " (comma followed by space) which is the delimiter between headers
+            const parts = cleanText.split(/,\s+/);
+            
+            parts.forEach(part => {
+                part = part.trim();
+                if (!part) return;
+                
+                const colonIndex = part.indexOf(':');
+                if (colonIndex > 0 && colonIndex < part.length - 1) {
+                    const key = part.substring(0, colonIndex).trim();
+                    let value = part.substring(colonIndex + 1).trim();
+                    
+                    // Clean up value (remove any extra commas/spaces)
+                    value = value.replace(/^[\s,]+|[\s,]+$/g, '');
+                    
+                    if (key && value) {
+                        headers.push({ key: key, value: value });
+                    }
+                }
+            });
+            
+            // Debug logging if parsing failed
+            if (headers.length === 0) {
+                console.log('Headers parsing failed. Raw text:', headersText);
+                console.log('Cleaned text:', cleanText);
+            }
+            
+            // Create formatted display as a single line (like message content)
+            if (headers.length > 0) {
+                let html = '<div class="d-flex flex-wrap align-items-center gap-2" style="line-height: 1.6;">';
+                headers.forEach((header, index) => {
+                    if (index > 0) {
+                        html += '<span class="text-muted mx-1">•</span>';
+                    }
+                    html += `<span class="d-inline-flex align-items-center"><span class="text-muted fw-semibold me-1" style="font-size: 0.9rem;">${escapeHtml(header.key)}:</span><code class="text-dark" style="font-size: 0.875rem; background: transparent; padding: 0;">${escapeHtml(header.value)}</code></span>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } else {
+                // Show raw text for debugging
+                container.innerHTML = `
+                    <p class="text-muted mb-2"><em>Unable to parse headers</em></p>
+                    <details class="small">
+                        <summary class="text-muted" style="cursor: pointer;">Show raw header data</summary>
+                        <pre class="mt-2 p-2 bg-white border rounded" style="font-size: 0.75rem;">${escapeHtml(headersText)}</pre>
+                    </details>
+                `;
+            }
+        });
+    }
+    
+    // Initialize headers collapse toggle icons
+    function initializeHeadersCollapse() {
+        // Use event delegation to handle all collapse buttons (only attach once)
+        if (!document.body.hasAttribute('data-headers-collapse-initialized')) {
+            document.body.setAttribute('data-headers-collapse-initialized', 'true');
+            
+            // Listen for Bootstrap collapse show event
+            document.body.addEventListener('shown.bs.collapse', function(event) {
+                const target = event.target;
+                const button = document.querySelector(`[data-bs-target="#${target.id}"]`);
+                if (button && button.classList.contains('headers-toggle-btn')) {
+                    const icon = button.querySelector('i');
+                    const toggleTextSpan = button.querySelector('.toggle-headers-text');
+                    if (icon) icon.className = 'bi bi-chevron-up';
+                    if (toggleTextSpan) toggleTextSpan.textContent = 'Hide';
+                }
+            });
+            
+            // Listen for Bootstrap collapse hide event
+            document.body.addEventListener('hidden.bs.collapse', function(event) {
+                const target = event.target;
+                const button = document.querySelector(`[data-bs-target="#${target.id}"]`);
+                if (button && button.classList.contains('headers-toggle-btn')) {
+                    const icon = button.querySelector('i');
+                    const toggleTextSpan = button.querySelector('.toggle-headers-text');
+                    if (icon) icon.className = 'bi bi-chevron-down';
+                    if (toggleTextSpan) toggleTextSpan.textContent = 'Show';
+                }
+            });
+        }
+        
+        // Set initial states for all buttons
+        document.querySelectorAll('.headers-toggle-btn').forEach(button => {
+            const targetId = button.getAttribute('data-bs-target');
+            if (!targetId) return;
+            
+            const target = document.querySelector(targetId);
+            const icon = button.querySelector('i');
+            const toggleTextSpan = button.querySelector('.toggle-headers-text');
+            
+            if (target && icon) {
+                if (target.classList.contains('show')) {
+                    icon.className = 'bi bi-chevron-up';
+                    if (toggleTextSpan) toggleTextSpan.textContent = 'Hide';
+                } else {
+                    icon.className = 'bi bi-chevron-down';
+                    if (toggleTextSpan) toggleTextSpan.textContent = 'Show';
+                }
+            }
+        });
+    }
+
+    // Initialize expand/collapse functionality for all messages
+    function initializeMessageViewers() {
+        // Use the function from main.js if available, otherwise define it here
+        if (typeof formatAndToggleMessage !== 'undefined') {
+            document.querySelectorAll('.message-content-container').forEach(container => {
+                if (!container.dataset.initialized) {
+                    try {
+                        formatAndToggleMessage(container);
+                        container.dataset.initialized = 'true';
+                    } catch (error) {
+                        console.error('Error initializing message viewer:', error);
+                    }
+                }
+            });
+        } else {
+            console.warn('formatAndToggleMessage function not available');
+        }
+    }
+
+    // Initialize on page load - wait for main.js to load
+    function initializePage() {
+        // Wait a bit to ensure main.js is loaded
+        if (typeof formatAndToggleMessage === 'undefined') {
+            setTimeout(initializePage, 100);
+            return;
+        }
+        initializeMessageViewers();
+        formatHeaders();
+        initializeHeadersCollapse();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePage);
+    } else {
+        initializePage();
+    }
+
+    // Re-initialize after HTMX swaps content
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        const target = event.detail.target;
+        if (target && (target.id === 'message-list' || target.closest('#message-list') || target.id === 'messages-list')) {
+            setTimeout(() => {
+                if (typeof formatAndToggleMessage !== 'undefined') {
+                    initializeMessageViewers();
+                    formatHeaders();
+                    initializeHeadersCollapse();
+                }
+            }, 50);
+        }
+    });
+</script>
 {{end}}

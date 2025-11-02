@@ -101,9 +101,14 @@ func (ka *KafAdmin) CreateTopic(topic string, numParts, replicationFactor int) e
 		return err
 	}
 
-	// Print results
+	// Check results for errors
 	for _, result := range results {
-		logger.Info("result: ", "result", result)
+		if result.Error.Code() != kafka.ErrNoError {
+			errMsg := fmt.Sprintf("failed to create topic '%s': %s", result.Topic, result.Error.String())
+			logger.Error("Failed to create topic", "topic", result.Topic, "error", errMsg)
+			return fmt.Errorf("failed to create topic '%s': %s", result.Topic, result.Error.String())
+		}
+		logger.Info("Topic created successfully", "topic", result.Topic)
 	}
 	return nil
 }

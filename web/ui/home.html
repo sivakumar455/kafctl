@@ -4,7 +4,7 @@
 
 <head>
     <meta charset='utf-8'>
-    <title>{{template "title" .}} - kafView</title>
+    <title>{{template "title" .}} - kafView | Kafka Management Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="/static/styles.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,39 +15,107 @@
     <div>
         {{ template "home-header"}}
     </div>
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-10">
-
-                <div class="row">
-                    <h2>Brokers</h2>
-                </div>
-                <hr>
-                <div class="row " id="cluster-info">
-                    {{template "clusterInfo" .}}
-                </div>
-
-                <div class="row">
-                    <h2>Topics</h2>
-                </div>
-
-                <div class="row btn-toolbar " role="toolbar" aria-label="Toolbar with button groups">
-                        <div class="col-2 btn-group" role="group" aria-label="Second group">
-                            <button type="button" class="btn btn-secondary btn-sm" hx-get="/createtopicform"
-                                hx-trigger="click" hx-target="body" hx-swap="outerHTML">New Topic</button>
-                        </div>
-                        <div class="col-2 btn-group" role="group" aria-label="Third group">
-                            <button type="button" class="btn btn-secondary btn-sm" hx-get="/publishform"
-                                hx-trigger="click" hx-target="body" hx-swap="outerHTML">Publish Payload</button>
-                        </div>
-                </div>
-                <hr>
-                <div class="row" id="topics-list">
-                    <div hx-get="/topics" hx-trigger="every 300s" hx-target="#topics-list" hx-swap="innerHTML">
+    <div class="container-fluid px-4 py-3">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card border-primary shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-diagram-3 text-primary" style="font-size: 2.5rem;"></i>
+                        <h5 class="card-title mt-2 mb-0">{{len .Brokers}}</h5>
+                        <p class="card-text text-muted mb-0">Brokers</p>
                     </div>
-                    {{template "topics" .}}
                 </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-success shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-stack text-success" style="font-size: 2.5rem;"></i>
+                        <h5 class="card-title mt-2 mb-0">{{len .Topics}}</h5>
+                        <p class="card-text text-muted mb-0">Topics</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-info shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-server text-info" style="font-size: 2.5rem;"></i>
+                        <h5 class="card-title mt-2 mb-0">
+                            {{if eq .Status "UP"}}
+                                <span class="badge bg-success">Online</span>
+                            {{else}}
+                                <span class="badge bg-danger">Offline</span>
+                            {{end}}
+                        </h5>
+                        <p class="card-text text-muted mb-0">Cluster Status</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card border-warning shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-lightning-charge text-warning" style="font-size: 2.5rem;"></i>
+                        <h5 class="card-title mt-2 mb-0">Quick Actions</h5>
+                        <p class="card-text text-muted mb-0 small">Manage topics & messages</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- Action Buttons -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-3 flex-wrap">
+                            <button type="button" class="btn btn-primary btn-lg" hx-get="/createtopicform"
+                                hx-trigger="click" hx-target="body" hx-swap="outerHTML">
+                                <i class="bi bi-plus-circle me-2"></i>Create New Topic
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg" hx-get="/publishform"
+                                hx-trigger="click" hx-target="body" hx-swap="outerHTML">
+                                <i class="bi bi-send me-2"></i>Publish Message
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Brokers Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Brokers</h5>
+                        <span class="badge bg-light text-dark">{{len .Brokers}} Active</span>
+                    </div>
+                    <div class="card-body" id="cluster-info">
+                        {{template "clusterInfo" .}}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topics Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-stack me-2"></i>Topics</h5>
+                        <span class="badge bg-light text-dark">{{len .Topics}} Total</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="topics-list">
+                            <div hx-get="/topics" hx-trigger="every 300s" hx-target="#topics-list" hx-swap="innerHTML">
+                            </div>
+                            {{template "topics" .}}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -55,15 +123,9 @@
     <div>
         {{ template "kaf-footer"}}
     </div>
-    <script src="/static/main.js"></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    <script src="/static/main.js?v=2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
         crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx.org@2.0.3"
         integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq"
@@ -71,22 +133,34 @@
 
     <script>
         function filterTopics() {
-            var input, filter, table, tr, td, i, txtValue;
-            input = document.getElementById('search-input');
-            filter = input.value.toLowerCase();
-            table = document.querySelector("#topics-list table");
-            tr = table.getElementsByTagName("tr");
+            const input = document.getElementById('search-input');
+            if (!input) return;
+            
+            const filter = input.value.trim().toLowerCase();
+            const table = document.getElementById('topics-table');
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr.topic-row');
+            let visibleCount = 0;
 
-            for (i = 1; i < tr.length; i++) { // Start from 1 to skip the header row
-                td = tr[i].getElementsByTagName("td")[0]; // Assuming the topic name is in the first column
-                if (td) {
-                    txtValue = td.textContent || td.innerText;
-                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
+            rows.forEach(row => {
+                const topicCell = row.querySelector('td:first-child');
+                if (topicCell) {
+                    const topicName = topicCell.textContent.toLowerCase();
+                    if (filter === '' || topicName.includes(filter)) {
+                        row.style.display = '';
+                        visibleCount++;
                     } else {
-                        tr[i].style.display = "none";
+                        row.style.display = 'none';
                     }
                 }
+            });
+
+            // Update count badge if it exists
+            const countBadge = document.querySelector('.input-group-text .badge');
+            if (countBadge) {
+                const originalCount = countBadge.dataset.originalCount || countBadge.textContent;
+                countBadge.textContent = filter === '' ? originalCount : visibleCount;
             }
         }
     </script>
